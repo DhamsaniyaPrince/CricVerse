@@ -11,6 +11,9 @@ const {
   setupMatchInnings,
   setupMatchReady,
   undoLastBall,
+  swapStrike,
+  changeBowler,
+  updatePlayerOfMatch,
   deleteMatch
 } = require('../controllers/matchController');
 const { protect, authorize } = require('../middleware/auth');
@@ -37,6 +40,15 @@ router.route('/:id/ball')
 
 router.route('/:id/undo')
   .post(protect, authorize('organizer', 'admin'), undoLastBall);
+
+router.route('/:id/swap-strike')
+  .put(protect, authorize('organizer', 'admin'), swapStrike);
+
+router.route('/:id/change-bowler')
+  .put(protect, authorize('organizer', 'admin'), changeBowler);
+
+router.route('/:id/player-of-match')
+  .put(protect, authorize('organizer', 'admin'), updatePlayerOfMatch);
 
 router.route('/:id/end')
   .post(protect, authorize('organizer', 'admin'), endMatch);

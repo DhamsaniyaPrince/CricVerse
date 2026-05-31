@@ -39,6 +39,20 @@ export interface Commentary {
   text: string;
   type: 'normal' | 'wicket' | 'boundary' | 'extra';
   runs: number;
+  metadata?: {
+    strikerId?: string;
+    nonStrikerId?: string;
+    bowlerId?: string;
+    runs?: number;
+    extraRuns?: number;
+    extraType?: string;
+    isExtra?: boolean;
+    isWicket?: boolean;
+    wicketType?: string;
+    batsmanOutId?: string;
+    isLegalBall?: boolean;
+    previousLiveState?: any;
+  };
 }
 
 export interface WagonWheelPoint {
@@ -73,6 +87,10 @@ export interface Match {
   commentary: Commentary[];
   wagonWheel: WagonWheelPoint[];
   result?: { winner?: { _id: string; name: string; logo?: string }; margin?: string };
+  target?: number;
+  playerOfMatch?: any;
+  playingXIA?: { _id: string; name: string; email?: string }[];
+  playingXIB?: { _id: string; name: string; email?: string }[];
 }
 
 interface MatchState {

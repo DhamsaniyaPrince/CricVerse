@@ -40,8 +40,37 @@ import {
 } from 'lucide-react';
 
 interface PlayerStats {
-  batting: { matches: number; runs: number; ballsFaced: number; innings: number; highestScore: number; average: number; strikeRate: number; fifties: number; hundreds: number };
-  bowling: { matches: number; wickets: number; ballsBowled: number; runsConceded: number; runsPerBall: number; average: number; strikeRate: number; fiveWickets: number };
+  batting: {
+    matches: number;
+    innings: number;
+    runs: number;
+    ballsFaced: number;
+    highestScore: number;
+    average: number;
+    strikeRate: number;
+    fours: number;
+    sixes: number;
+    fifties: number;
+    hundreds: number;
+    ducks: number;
+  };
+  bowling: {
+    matches: number;
+    wickets: number;
+    ballsBowled: number;
+    runsConceded: number;
+    bestBowling: string;
+    economy: number;
+    maidens: number;
+    average: number;
+    strikeRate: number;
+    fiveWickets: number;
+  };
+  fielding: {
+    catches: number;
+    runOuts: number;
+    stumpings: number;
+  };
 }
 
 interface Player {
@@ -80,7 +109,7 @@ export default function PlayerProfilePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [updating, setUpdating] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'matches' | 'achievements'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'matches' | 'achievements' | 'graphs'>('overview');
 
   // Edit form states
   const [editForm, setEditForm] = useState({
@@ -184,12 +213,22 @@ export default function PlayerProfilePage() {
 
   // Prepare radar profile charts
   const skillProfile = [
-    { subject: 'Runs', A: stats.batting.runs > 5000 ? 100 : (stats.batting.runs / 50), fullMark: 100 },
-    { subject: 'Wickets', A: stats.bowling.wickets > 150 ? 100 : (stats.bowling.wickets / 1.5), fullMark: 100 },
-    { subject: 'Catches', A: catches > 50 ? 100 : (catches * 2), fullMark: 100 },
+    { subject: 'Runs', A: (stats?.batting?.runs || 0) > 5000 ? 100 : ((stats?.batting?.runs || 0) / 50), fullMark: 100 },
+    { subject: 'Wickets', A: (stats?.bowling?.wickets || 0) > 150 ? 100 : ((stats?.bowling?.wickets || 0) / 1.5), fullMark: 100 },
+    { subject: 'Catches', A: (stats?.fielding?.catches || catches || 0) > 50 ? 100 : ((stats?.fielding?.catches || catches || 0) * 2), fullMark: 100 },
     { subject: 'MVPs', A: mvpAwards > 10 ? 100 : (mvpAwards * 10), fullMark: 100 },
-    { subject: 'Strike Rate', A: Math.min(100, stats.batting.strikeRate / 1.5), fullMark: 100 },
+    { subject: 'Strike Rate', A: Math.min(100, (stats?.batting?.strikeRate || 0) / 1.5), fullMark: 100 },
   ];
+
+  const chartData = matchHistory && matchHistory.length > 0
+    ? [...matchHistory]
+        .reverse()
+        .map((m, index) => ({
+          match: `Game ${index + 1}`,
+          runs: m.runs || 0,
+          wickets: m.wickets || 0
+        }))
+    : mockMatchPerformance;
 
   return (
     <div className="flex flex-col min-h-screen bg-[#0b0c10]">
@@ -367,7 +406,7 @@ export default function PlayerProfilePage() {
           </div>
 
           {/* Profile Navigation Tabs */}
-          <div className="flex border-b border-[#66fcf1]/15 mb-8">
+          <div className="flex flex-wrap border-b border-[#66fcf1]/15 mb-8">
             <button
               onClick={() => setActiveTab('overview')}
               className={`pb-4 px-6 font-bold uppercase tracking-wider text-sm transition focus:outline-none border-b-2 ${
@@ -376,7 +415,17 @@ export default function PlayerProfilePage() {
                   : 'border-transparent text-gray-400 hover:text-white'
               }`}
             >
-              Overview & Charts
+              Career Overview
+            </button>
+            <button
+              onClick={() => setActiveTab('graphs')}
+              className={`pb-4 px-6 font-bold uppercase tracking-wider text-sm transition focus:outline-none border-b-2 ${
+                activeTab === 'graphs'
+                  ? 'border-[#66fcf1] text-[#66fcf1]'
+                  : 'border-transparent text-gray-400 hover:text-white'
+              }`}
+            >
+              Performance Graphs
             </button>
             <button
               onClick={() => setActiveTab('matches')}
@@ -396,12 +445,124 @@ export default function PlayerProfilePage() {
                   : 'border-transparent text-gray-400 hover:text-white'
               }`}
             >
-              Badges ({achievements?.length || 0})
+              Badges/Achievements ({achievements?.length || 0})
             </button>
           </div>
 
           {/* Tab Views */}
           {activeTab === 'overview' && (
+            <div className="space-y-8">
+              {/* Batting Career Stats Table */}
+              <div className="glass-card p-6 border-[#66fcf1]/10">
+                <div className="flex items-center space-x-2 mb-4 border-b border-[#66fcf1]/10 pb-3">
+                  <Activity className="w-5 h-5 text-[#66fcf1]" />
+                  <h3 className="text-sm font-extrabold uppercase tracking-wider text-white font-mono">Batting Career statistics</h3>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm text-gray-400">
+                    <thead className="text-xs uppercase text-gray-500 font-bold border-b border-white/5">
+                      <tr>
+                        <th className="py-3 px-3 text-center">Matches</th>
+                        <th className="py-3 px-3 text-center">Innings</th>
+                        <th className="py-3 px-3 text-center">Runs</th>
+                        <th className="py-3 px-3 text-center">Highest Score</th>
+                        <th className="py-3 px-3 text-center">Average</th>
+                        <th className="py-3 px-3 text-center">Strike Rate</th>
+                        <th className="py-3 px-3 text-center">Fours (4s)</th>
+                        <th className="py-3 px-3 text-center">Sixes (6s)</th>
+                        <th className="py-3 px-3 text-center">Fifties (50s)</th>
+                        <th className="py-3 px-3 text-center">Hundreds (100s)</th>
+                        <th className="py-3 px-3 text-center">Ducks</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="border-b border-white/5 hover:bg-white/5 transition">
+                        <td className="py-4 px-3 font-mono font-bold text-white text-center">{stats?.batting?.matches || 0}</td>
+                        <td className="py-4 px-3 font-mono text-white text-center">{stats?.batting?.innings || 0}</td>
+                        <td className="py-4 px-3 font-mono font-bold text-emerald-400 text-center">{stats?.batting?.runs || 0}</td>
+                        <td className="py-4 px-3 font-mono text-amber-400 text-center">{stats?.batting?.highestScore || 0}</td>
+                        <td className="py-4 px-3 font-mono text-white text-center">{stats?.batting?.average ? stats.batting.average.toFixed(2) : '0.00'}</td>
+                        <td className="py-4 px-3 font-mono text-white text-center">{stats?.batting?.strikeRate ? stats.batting.strikeRate.toFixed(2) : '0.00'}</td>
+                        <td className="py-4 px-3 font-mono text-white text-center">{stats?.batting?.fours || 0}</td>
+                        <td className="py-4 px-3 font-mono text-cyan-400 text-center">{stats?.batting?.sixes || 0}</td>
+                        <td className="py-4 px-3 font-mono text-purple-400 text-center">{stats?.batting?.fifties || 0}</td>
+                        <td className="py-4 px-3 font-mono text-yellow-400 text-center">{stats?.batting?.hundreds || 0}</td>
+                        <td className="py-4 px-3 font-mono text-red-500 text-center">{stats?.batting?.ducks || 0}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Bowling Career Stats Table */}
+              <div className="glass-card p-6 border-[#66fcf1]/10">
+                <div className="flex items-center space-x-2 mb-4 border-b border-[#66fcf1]/10 pb-3">
+                  <Zap className="w-5 h-5 text-[#66fcf1]" />
+                  <h3 className="text-sm font-extrabold uppercase tracking-wider text-white font-mono">Bowling Career statistics</h3>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm text-gray-400">
+                    <thead className="text-xs uppercase text-gray-500 font-bold border-b border-white/5">
+                      <tr>
+                        <th className="py-3 px-3 text-center">Matches</th>
+                        <th className="py-3 px-3 text-center">Overs</th>
+                        <th className="py-3 px-3 text-center">Runs Conceded</th>
+                        <th className="py-3 px-3 text-center">Wickets</th>
+                        <th className="py-3 px-3 text-center">Best Bowling</th>
+                        <th className="py-3 px-3 text-center">Economy</th>
+                        <th className="py-3 px-3 text-center">Average</th>
+                        <th className="py-3 px-3 text-center">Maidens</th>
+                        <th className="py-3 px-3 text-center">Five Wickets (5w)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="border-b border-white/5 hover:bg-white/5 transition">
+                        <td className="py-4 px-3 font-mono font-bold text-white text-center">{stats?.bowling?.matches || 0}</td>
+                        <td className="py-4 px-3 font-mono text-white text-center font-bold">
+                          {stats?.bowling?.ballsBowled ? `${Math.floor(stats.bowling.ballsBowled / 6)}.${stats.bowling.ballsBowled % 6}` : '0.0'}
+                        </td>
+                        <td className="py-4 px-3 font-mono text-red-400 text-center">{stats?.bowling?.runsConceded || 0}</td>
+                        <td className="py-4 px-3 font-mono font-bold text-pink-400 text-center">{stats?.bowling?.wickets || 0}</td>
+                        <td className="py-4 px-3 font-mono text-amber-400 text-center">{stats?.bowling?.bestBowling || '0/0'}</td>
+                        <td className="py-4 px-3 font-mono text-white text-center">{stats?.bowling?.economy ? stats.bowling.economy.toFixed(2) : '0.00'}</td>
+                        <td className="py-4 px-3 font-mono text-white text-center">{stats?.bowling?.average ? stats.bowling.average.toFixed(2) : '0.00'}</td>
+                        <td className="py-4 px-3 font-mono text-white text-center">{stats?.bowling?.maidens || 0}</td>
+                        <td className="py-4 px-3 font-mono text-white text-center">{stats?.bowling?.fiveWickets || 0}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Fielding Career Stats Table */}
+              <div className="glass-card p-6 border-[#66fcf1]/10">
+                <div className="flex items-center space-x-2 mb-4 border-b border-[#66fcf1]/10 pb-3">
+                  <User className="w-5 h-5 text-[#66fcf1]" />
+                  <h3 className="text-sm font-extrabold uppercase tracking-wider text-white font-mono">Fielding Career statistics</h3>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm text-gray-400">
+                    <thead className="text-xs uppercase text-gray-500 font-bold border-b border-white/5">
+                      <tr>
+                        <th className="py-3 px-3 text-center">Catches</th>
+                        <th className="py-3 px-3 text-center">Run Outs</th>
+                        <th className="py-3 px-3 text-center">Stumpings</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="border-b border-white/5 hover:bg-white/5 transition">
+                        <td className="py-4 px-3 font-mono font-bold text-white text-center">{stats?.fielding?.catches || 0}</td>
+                        <td className="py-4 px-3 font-mono font-bold text-[#66fcf1] text-center">{stats?.fielding?.runOuts || 0}</td>
+                        <td className="py-4 px-3 font-mono font-bold text-white text-center">{stats?.fielding?.stumpings || 0}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'graphs' && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Radar chart of player skills */}
               <div className="glass-card p-6 border-[#66fcf1]/10 flex flex-col items-center">
@@ -423,7 +584,7 @@ export default function PlayerProfilePage() {
                 <h3 className="text-xs uppercase font-extrabold tracking-widest text-white mb-6">Recent runs scoring trend</h3>
                 <div className="h-64 w-full">
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={mockMatchPerformance} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <LineChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(102,252,241,0.03)" />
                       <XAxis dataKey="match" stroke="rgba(255,255,255,0.4)" fontSize={11} />
                       <YAxis stroke="rgba(255,255,255,0.4)" fontSize={11} />

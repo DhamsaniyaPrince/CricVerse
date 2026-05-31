@@ -17,6 +17,25 @@ const getMatchQuery = (tournamentId) => {
 
 // 1. Top Batsmen (Runs)
 const getTopBatsmen = async (tournamentId) => {
+  if (!tournamentId) {
+    const Player = require('../models/Player');
+    const players = await Player.find({ 'stats.batting.runs': { $gt: 0 } })
+      .sort({ 'stats.batting.runs': -1 })
+      .limit(10);
+    return players.map(p => ({
+      _id: p._id,
+      name: p.name,
+      avatar: p.avatar,
+      role: p.role,
+      runs: p.stats.batting.runs,
+      balls: p.stats.batting.ballsFaced,
+      fours: p.stats.batting.fours,
+      sixes: p.stats.batting.sixes,
+      matchCount: p.stats.batting.matches,
+      strikeRate: p.stats.batting.strikeRate
+    }));
+  }
+
   return Match.aggregate([
     { $match: getMatchQuery(tournamentId) },
     { $unwind: '$innings' },
@@ -67,6 +86,27 @@ const getTopBatsmen = async (tournamentId) => {
 
 // 2. Top Bowlers (Wickets)
 const getTopBowlers = async (tournamentId) => {
+  if (!tournamentId) {
+    const Player = require('../models/Player');
+    const players = await Player.find({ 'stats.bowling.wickets': { $gt: 0 } })
+      .sort({ 'stats.bowling.wickets': -1, 'stats.bowling.economy': 1 })
+      .limit(10);
+    return players.map(p => {
+      const overs = parseFloat((Math.floor(p.stats.bowling.ballsBowled / 6) + (p.stats.bowling.ballsBowled % 6) / 10).toFixed(1));
+      return {
+        _id: p._id,
+        name: p.name,
+        avatar: p.avatar,
+        role: p.role,
+        wickets: p.stats.bowling.wickets,
+        runsConceded: p.stats.bowling.runsConceded,
+        overs: overs,
+        matchCount: p.stats.bowling.matches,
+        economy: p.stats.bowling.economy
+      };
+    });
+  }
+
   return Match.aggregate([
     { $match: getMatchQuery(tournamentId) },
     { $unwind: '$innings' },
@@ -115,6 +155,23 @@ const getTopBowlers = async (tournamentId) => {
 
 // 3. Highest Strike Rate (SR) - Minimum 20 balls faced
 const getHighestStrikeRate = async (tournamentId) => {
+  if (!tournamentId) {
+    const Player = require('../models/Player');
+    const players = await Player.find({ 'stats.batting.ballsFaced': { $gte: 20 } })
+      .sort({ 'stats.batting.strikeRate': -1 })
+      .limit(10);
+    return players.map(p => ({
+      _id: p._id,
+      name: p.name,
+      avatar: p.avatar,
+      role: p.role,
+      runs: p.stats.batting.runs,
+      balls: p.stats.batting.ballsFaced,
+      matchCount: p.stats.batting.matches,
+      strikeRate: p.stats.batting.strikeRate
+    }));
+  }
+
   return Match.aggregate([
     { $match: getMatchQuery(tournamentId) },
     { $unwind: '$innings' },
@@ -127,7 +184,7 @@ const getHighestStrikeRate = async (tournamentId) => {
         matches: { $addToSet: '$_id' }
       }
     },
-    { $match: { balls: { $gte: 20 } } }, // Filter out small sample sizes
+    { $match: { balls: { $gte: 20 } } },
     {
       $lookup: {
         from: 'players',
@@ -162,6 +219,22 @@ const getHighestStrikeRate = async (tournamentId) => {
 
 // 4. Most Sixes
 const getMostSixes = async (tournamentId) => {
+  if (!tournamentId) {
+    const Player = require('../models/Player');
+    const players = await Player.find({ 'stats.batting.sixes': { $gt: 0 } })
+      .sort({ 'stats.batting.sixes': -1, 'stats.batting.runs': -1 })
+      .limit(10);
+    return players.map(p => ({
+      _id: p._id,
+      name: p.name,
+      avatar: p.avatar,
+      role: p.role,
+      sixes: p.stats.batting.sixes,
+      runs: p.stats.batting.runs,
+      matchCount: p.stats.batting.matches
+    }));
+  }
+
   return Match.aggregate([
     { $match: getMatchQuery(tournamentId) },
     { $unwind: '$innings' },
@@ -202,6 +275,35 @@ const getMostSixes = async (tournamentId) => {
 // 5. MVP Rankings
 // Formula: Runs + Fours*2 + Sixes*4 + Wickets*25
 const getMvpRankings = async (tournamentId) => {
+  if (!tournamentId) {
+    const Player = require('../models/Player');
+    const players = await Player.find({
+      $or: [
+        { 'stats.batting.runs': { $gt: 0 } },
+        { 'stats.bowling.wickets': { $gt: 0 } }
+      ]
+    });
+    const mapped = players.map(p => {
+      const runs = p.stats.batting.runs || 0;
+      const fours = p.stats.batting.fours || 0;
+      const sixes = p.stats.batting.sixes || 0;
+      const wickets = p.stats.bowling.wickets || 0;
+      const mvpPoints = runs + (fours * 2) + (sixes * 4) + (wickets * 25);
+      return {
+        _id: p._id,
+        name: p.name,
+        avatar: p.avatar,
+        role: p.role,
+        runs,
+        fours,
+        sixes,
+        wickets,
+        mvpPoints
+      };
+    });
+    return mapped.sort((a, b) => b.mvpPoints - a.mvpPoints).slice(0, 10);
+  }
+
   return Match.aggregate([
     { $match: getMatchQuery(tournamentId) },
     {

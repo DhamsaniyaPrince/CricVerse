@@ -124,6 +124,7 @@ const matchSchema = new mongoose.Schema({
       strikerId: String,
       nonStrikerId: String,
       bowlerId: String,
+      fielderId: String,
       runs: Number,
       extraRuns: Number,
       extraType: String,
@@ -144,6 +145,14 @@ const matchSchema = new mongoose.Schema({
   result: {
     winner: { type: mongoose.Schema.Types.ObjectId, ref: 'Team' },
     margin: String // e.g. "by 7 wickets", "by 12 runs"
+  },
+  target: {
+    type: Number,
+    default: 0
+  },
+  playerOfMatch: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Player'
   },
   createdAt: {
     type: Date,

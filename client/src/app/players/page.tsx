@@ -7,6 +7,7 @@ import api from '@/utils/api';
 import { User, ShieldAlert, Award, Star, Activity, Search, Plus, Trash2, HelpCircle } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
+import Link from 'next/link';
 
 interface Player {
   _id: string;
@@ -15,8 +16,37 @@ interface Player {
   battingStyle: string;
   bowlingStyle: string;
   stats: {
-    batting: { matches: number; runs: number; average: number; strikeRate: number; highestScore: number };
-    bowling: { wickets: number; runsPerBall: number; fiveWickets: number };
+    batting: {
+      matches: number;
+      innings: number;
+      runs: number;
+      ballsFaced: number;
+      highestScore: number;
+      average: number;
+      strikeRate: number;
+      fours: number;
+      sixes: number;
+      fifties: number;
+      hundreds: number;
+      ducks: number;
+    };
+    bowling: {
+      matches: number;
+      wickets: number;
+      ballsBowled: number;
+      runsConceded: number;
+      bestBowling: string;
+      economy: number;
+      maidens: number;
+      average: number;
+      strikeRate: number;
+      fiveWickets: number;
+    };
+    fielding?: {
+      catches: number;
+      runOuts: number;
+      stumpings: number;
+    };
   };
 }
 
@@ -312,45 +342,50 @@ export default function PlayersPage() {
                   </div>
 
                   {/* Career Stats Grid */}
-                  <div className="border-t border-[#66fcf1]/5 pt-4 grid grid-cols-3 gap-2 text-center">
-                    <div className="bg-[#0b0c10]/40 p-2 rounded">
-                      <span className="text-[9px] text-gray-500 font-bold block uppercase">Matches</span>
-                      <span className="text-sm font-bold font-mono text-white mt-0.5 block">
+                  <div className="border-t border-[#66fcf1]/5 pt-4 grid grid-cols-5 gap-1 text-center">
+                    <div className="bg-[#0b0c10]/40 py-1.5 px-0.5 rounded">
+                      <span className="text-[8px] text-gray-500 font-bold block uppercase tracking-tighter">Mat</span>
+                      <span className="text-xs font-bold font-mono text-white mt-0.5 block">
                         {player.stats?.batting?.matches || 0}
                       </span>
                     </div>
                     
-                    {player.role === 'Bowler' ? (
-                      <>
-                        <div className="bg-[#0b0c10]/40 p-2 rounded">
-                          <span className="text-[9px] text-gray-500 font-bold block uppercase">Wickets</span>
-                          <span className="text-sm font-bold font-mono text-pink-400 mt-0.5 block">
-                            {player.stats?.bowling?.wickets || 0}
-                          </span>
-                        </div>
-                        <div className="bg-[#0b0c10]/40 p-2 rounded">
-                          <span className="text-[9px] text-gray-500 font-bold block uppercase">Economy</span>
-                          <span className="text-sm font-bold font-mono text-white mt-0.5 block">
-                            {player.stats?.bowling?.runsPerBall ? (player.stats.bowling.runsPerBall * 6).toFixed(2) : '0.00'}
-                          </span>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <div className="bg-[#0b0c10]/40 p-2 rounded">
-                          <span className="text-[9px] text-gray-500 font-bold block uppercase">Runs</span>
-                          <span className="text-sm font-bold font-mono text-emerald-400 mt-0.5 block">
-                            {player.stats?.batting?.runs || 0}
-                          </span>
-                        </div>
-                        <div className="bg-[#0b0c10]/40 p-2 rounded">
-                          <span className="text-[9px] text-gray-500 font-bold block uppercase">SR</span>
-                          <span className="text-sm font-bold font-mono text-white mt-0.5 block">
-                            {player.stats?.batting?.strikeRate || 0}
-                          </span>
-                        </div>
-                      </>
-                    )}
+                    <div className="bg-[#0b0c10]/40 py-1.5 px-0.5 rounded">
+                      <span className="text-[8px] text-gray-500 font-bold block uppercase tracking-tighter">Runs</span>
+                      <span className="text-xs font-bold font-mono text-emerald-400 mt-0.5 block">
+                        {player.stats?.batting?.runs || 0}
+                      </span>
+                    </div>
+
+                    <div className="bg-[#0b0c10]/40 py-1.5 px-0.5 rounded">
+                      <span className="text-[8px] text-gray-500 font-bold block uppercase tracking-tighter">HS</span>
+                      <span className="text-xs font-bold font-mono text-amber-400 mt-0.5 block">
+                        {player.stats?.batting?.highestScore || 0}
+                      </span>
+                    </div>
+
+                    <div className="bg-[#0b0c10]/40 py-1.5 px-0.5 rounded">
+                      <span className="text-[8px] text-gray-500 font-bold block uppercase tracking-tighter">SR</span>
+                      <span className="text-xs font-bold font-mono text-white mt-0.5 block">
+                        {player.stats?.batting?.strikeRate ? player.stats.batting.strikeRate.toFixed(1) : '0.0'}
+                      </span>
+                    </div>
+
+                    <div className="bg-[#0b0c10]/40 py-1.5 px-0.5 rounded">
+                      <span className="text-[8px] text-gray-500 font-bold block uppercase tracking-tighter">Wkts</span>
+                      <span className="text-xs font-bold font-mono text-pink-400 mt-0.5 block">
+                        {player.stats?.bowling?.wickets || 0}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="pt-2">
+                    <Link
+                      href={`/players/${player._id}`}
+                      className="w-full py-2 bg-[#1f2833]/30 hover:bg-[#66fcf1]/10 border border-[#66fcf1]/20 hover:border-[#66fcf1] text-[#66fcf1] text-[10px] font-bold rounded-lg uppercase tracking-wider transition duration-200 flex items-center justify-center space-x-1"
+                    >
+                      <span>View Full Profile</span>
+                    </Link>
                   </div>
                 </div>
               ))}

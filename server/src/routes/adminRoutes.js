@@ -31,4 +31,15 @@ router.get('/reports', getReports);
 router.put('/reports/:id/resolve', resolveReport);
 router.delete('/matches/:id', deleteMatch);
 
+// Admin trigger to rebuild all player career stats
+router.post('/recalculate-stats', async (req, res) => {
+  try {
+    const { recalculateAllPlayersStats } = require('../services/statsService');
+    const count = await recalculateAllPlayersStats();
+    res.json({ success: true, message: `Successfully recalculated stats for all ${count} players.` });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 module.exports = router;

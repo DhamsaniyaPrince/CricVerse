@@ -64,7 +64,11 @@ const tournamentSchema = new mongoose.Schema({
     lost: { type: Number, default: 0 },
     tied: { type: Number, default: 0 },
     points: { type: Number, default: 0 },
-    nrr: { type: Number, default: 0.0 } // Net Run Rate
+    nrr: { type: Number, default: 0.0 }, // Net Run Rate
+    runsScored: { type: Number, default: 0 },
+    ballsFaced: { type: Number, default: 0 },
+    runsConceded: { type: Number, default: 0 },
+    ballsBowled: { type: Number, default: 0 }
   }],
   fixtures: [{
     match: {

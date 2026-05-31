@@ -1,0 +1,94 @@
+@import "tailwindcss";
+
+:root {
+  --background: #0b0c10;
+  --foreground: #f3f4f6;
+  --neon-cyan: #66fcf1;
+  --neon-green: #39ff14;
+  --neon-magenta: #ff007f;
+  --card-bg: rgba(31, 40, 51, 0.4);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-outfit), sans-serif;
+  --color-neon-cyan: var(--neon-cyan);
+  --color-neon-green: var(--neon-green);
+  --color-neon-magenta: var(--neon-magenta);
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
+
+/* Glassmorphism card utility */
+.glass-card {
+  background: rgba(31, 40, 51, 0.35);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(102, 252, 241, 0.15);
+  border-radius: 1rem;
+}
+
+.glass-card-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card-hover:hover {
+  background: rgba(31, 40, 51, 0.5);
+  border-color: rgba(102, 252, 241, 0.35);
+  box-shadow: 0 8px 30px rgba(102, 252, 241, 0.1);
+  transform: translateY(-2px);
+}
+
+/* Neon glow animations & classes */
+.neon-glow-cyan {
+  box-shadow: 0 0 15px rgba(102, 252, 241, 0.3);
+}
+
+.neon-glow-green {
+  box-shadow: 0 0 15px rgba(57, 255, 20, 0.3);
+}
+
+.neon-glow-magenta {
+  box-shadow: 0 0 15px rgba(255, 0, 127, 0.3);
+}
+
+.neon-text-cyan {
+  text-shadow: 0 0 8px rgba(102, 252, 241, 0.5);
+}
+
+.neon-text-green {
+  text-shadow: 0 0 8px rgba(57, 255, 20, 0.5);
+}
+
+/* Custom scrollbars for stats and commentary */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0b0c10;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(102, 252, 241, 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(102, 252, 241, 0.6);
+}
+
+@keyframes pulse-fast {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.9); }
+}
+
+.animate-pulse-fast {
+  animation: pulse-fast 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}

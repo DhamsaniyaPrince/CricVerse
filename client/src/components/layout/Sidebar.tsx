@@ -23,6 +23,7 @@ export default function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose?
     { name: 'Tournaments', path: '/tournaments', icon: Trophy },
     { name: 'Teams', path: '/teams', icon: Users },
     { name: 'Players', path: '/players', icon: Users },
+    { name: 'Settings', path: '/settings', icon: Settings, authRequired: true },
   ];
 
   // Scorer/Admin paths

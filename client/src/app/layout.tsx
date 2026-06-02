@@ -24,6 +24,23 @@ export default function RootLayout({
       lang="en"
       className={`${outfit.variable} dark h-full antialiased`}
     >
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                if (localStorage.getItem('theme') === 'light') {
+                  document.documentElement.classList.add('light-mode');
+                  document.documentElement.classList.remove('dark');
+                } else {
+                  document.documentElement.classList.add('dark');
+                  document.documentElement.classList.remove('light-mode');
+                }
+              } catch (_) {}
+            `,
+          }}
+        />
+      </head>
       <body className="min-h-full bg-[#0b0c10] text-gray-100 flex flex-col font-sans selection:bg-[#66fcf1] selection:text-[#0b0c10]">
         <Providers>
           {children}
@@ -32,3 +49,4 @@ export default function RootLayout({
     </html>
   );
 }
+

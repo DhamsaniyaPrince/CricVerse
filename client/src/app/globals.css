@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #0b0c10;
   --foreground: #f3f4f6;
@@ -8,6 +10,7 @@
   --neon-magenta: #ff007f;
   --card-bg: rgba(31, 40, 51, 0.4);
 }
+
 
 @theme inline {
   --color-background: var(--background);
@@ -92,3 +95,167 @@ body {
 .animate-pulse-fast {
   animation: pulse-fast 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
+
+/* Light mode theme variables and styles */
+.light-mode {
+  --background: #f3f4f6;
+  --foreground: #111827;
+  --neon-cyan: #0891b2; /* Cyan 600 - darker for readability on light BG */
+  --neon-green: #16a34a; /* Green 600 */
+  --neon-magenta: #db2777; /* Pink 600 */
+  --card-bg: rgba(255, 255, 255, 0.85);
+
+  background-color: var(--background) !important;
+  color: var(--foreground) !important;
+}
+
+.light-mode body {
+  background-color: var(--background) !important;
+  color: var(--foreground) !important;
+}
+
+/* Smooth transitions for theme switching */
+body, 
+.glass-card, 
+nav, 
+aside, 
+main,
+button,
+input,
+select,
+span,
+h1,
+h2,
+h3,
+h4,
+p,
+a,
+div {
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Override utility colors dynamically to keep light mode premium */
+.light-mode .text-white {
+  color: #111827 !important;
+}
+
+.light-mode .text-gray-400 {
+  color: #4b5563 !important;
+}
+
+.light-mode .text-gray-300 {
+  color: #374151 !important;
+}
+
+.light-mode .text-gray-500 {
+  color: #6b7280 !important;
+}
+
+.light-mode .text-gray-100 {
+  color: #1f2937 !important;
+}
+
+.light-mode .bg-\[\#0b0c10\] {
+  background-color: var(--background) !important;
+}
+
+.light-mode .bg-\[\#0b0c10\]\/75,
+.light-mode .bg-\[\#0b0c10\]\/60,
+.light-mode .bg-\[\#0b0c10\]\/40,
+.light-mode .bg-\[\#0b0c10\]\/30 {
+  background-color: rgba(255, 255, 255, 0.75) !important;
+}
+
+.light-mode .bg-\[\#1f2833\] {
+  background-color: #e5e7eb !important;
+}
+
+.light-mode .bg-\[\#1f2833\]\/30,
+.light-mode .bg-\[\#1f2833\]\/40,
+.light-mode .bg-\[\#1f2833\]\/50,
+.light-mode .bg-\[\#1f2833\]\/60,
+.light-mode .bg-\[\#1f2833\]\/20 {
+  background-color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.light-mode .bg-white\/5 {
+  background-color: rgba(0, 0, 0, 0.05) !important;
+}
+
+.light-mode .bg-white\/10 {
+  background-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+.light-mode .glass-card {
+  background: rgba(255, 255, 255, 0.8) !important;
+  border-color: rgba(8, 145, 178, 0.2) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+
+.light-mode .glass-card-hover:hover {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-color: rgba(8, 145, 178, 0.45) !important;
+  box-shadow: 0 8px 30px rgba(8, 145, 178, 0.15) !important;
+}
+
+.light-mode .border-white\/5,
+.light-mode .border-white\/10,
+.light-mode .border-white\/15 {
+  border-color: rgba(17, 24, 39, 0.08) !important;
+}
+
+.light-mode .bg-gray-800 {
+  background-color: #e5e7eb !important;
+}
+
+.light-mode select,
+.light-mode input,
+.light-mode textarea {
+  background-color: #ffffff !important;
+  color: #111827 !important;
+  border-color: rgba(0, 0, 0, 0.15) !important;
+}
+
+.light-mode select option {
+  background-color: #ffffff !important;
+  color: #111827 !important;
+}
+
+.light-mode .text-pink-400 {
+  color: var(--neon-magenta) !important;
+}
+
+.light-mode .text-emerald-400 {
+  color: var(--neon-green) !important;
+}
+
+.light-mode .text-\[\#66fcf1\] {
+  color: var(--neon-cyan) !important;
+}
+
+.light-mode .bg-\[\#66fcf1\]\/10 {
+  background-color: rgba(8, 145, 178, 0.1) !important;
+}
+
+.light-mode .border-\[\#66fcf1\]\/10,
+.light-mode .border-\[\#66fcf1\]\/15,
+.light-mode .border-\[\#66fcf1\]\/20 {
+  border-color: rgba(8, 145, 178, 0.2) !important;
+}
+
+.light-mode .shadow-cyan-500\/10 {
+  box-shadow: 0 10px 15px -3px rgba(8, 145, 178, 0.2) !important;
+}
+
+.light-mode ::-webkit-scrollbar-track {
+  background: #f3f4f6;
+}
+
+.light-mode ::-webkit-scrollbar-thumb {
+  background: rgba(8, 145, 178, 0.3);
+}
+
+.light-mode ::-webkit-scrollbar-thumb:hover {
+  background: rgba(8, 145, 178, 0.6);
+}
+

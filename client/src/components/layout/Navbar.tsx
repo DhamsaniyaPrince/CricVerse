@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/store';
 import { logout } from '@/store/slices/authSlice';
-import { User, LogOut, ChevronDown, Activity, Award, Trophy, UserPlus, Menu } from 'lucide-react';
+import { User, LogOut, ChevronDown, Activity, Award, Trophy, UserPlus, Menu, Settings } from 'lucide-react';
 
 export default function Navbar({ onMenuClick }: { onMenuClick?: () => void }) {
   const router = useRouter();
@@ -74,8 +74,12 @@ export default function Navbar({ onMenuClick }: { onMenuClick?: () => void }) {
               onClick={() => setDropdownOpen(!dropdownOpen)}
               className="flex items-center space-x-2 bg-[#1f2833]/60 hover:bg-[#1f2833] border border-[#66fcf1]/20 py-1.5 px-3 rounded-full transition duration-300 focus:outline-none"
             >
-              <div className="w-8 h-8 rounded-full bg-[#66fcf1]/20 flex items-center justify-center font-bold text-[#66fcf1]">
-                {user.username.charAt(0).toUpperCase()}
+              <div className="w-8 h-8 rounded-full bg-[#66fcf1]/20 flex items-center justify-center font-bold text-[#66fcf1] overflow-hidden">
+                {user.avatar ? (
+                  <img src={user.avatar} alt={user.username} className="w-full h-full object-cover" />
+                ) : (
+                  user.username.charAt(0).toUpperCase()
+                )}
               </div>
               <div className="hidden lg:block text-left text-xs pr-1">
                 <p className="font-semibold text-white max-w-[80px] truncate">{user.username}</p>
@@ -97,6 +101,14 @@ export default function Navbar({ onMenuClick }: { onMenuClick?: () => void }) {
                 >
                   <User className="w-4 h-4" />
                   <span>Dashboard</span>
+                </Link>
+                <Link
+                  href="/settings"
+                  onClick={() => setDropdownOpen(false)}
+                  className="flex items-center space-x-2 px-3 py-2 rounded-lg text-sm text-gray-300 hover:bg-[#1f2833] hover:text-[#66fcf1] transition duration-200"
+                >
+                  <Settings className="w-4 h-4" />
+                  <span>Settings</span>
                 </Link>
                 <button
                   onClick={handleLogout}

@@ -198,3 +198,103 @@ exports.resetPassword = async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 };
+
+// @desc    Update user profile details
+// @route   PUT /api/auth/updatedetails
+// @access  Private
+exports.updateProfile = async (req, res) => {
+  const { username, email, role, avatar } = req.body;
+
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    // Check if new email is already taken by another user
+    if (email && email !== user.email) {
+      const emailExists = await User.findOne({ email });
+      if (emailExists) {
+        return res.status(400).json({ success: false, message: 'Email is already taken by another account.' });
+      }
+      user.email = email;
+    }
+
+    // Check if new username is already taken by another user
+    let oldUsername = user.username;
+    if (username && username !== user.username) {
+      const usernameExists = await User.findOne({ username });
+      if (usernameExists) {
+        return res.status(400).json({ success: false, message: 'Username is already taken by another account.' });
+      }
+      user.username = username;
+    }
+
+    if (role) {
+      user.role = role;
+    }
+
+    if (avatar !== undefined) {
+      user.avatar = avatar;
+    }
+
+    await user.save();
+
+    // If username or avatar changed, find and update corresponding Player profile!
+    if (username || avatar) {
+      const Player = require('../models/Player');
+      const player = await Player.findOne({ name: { $regex: new RegExp(`^${oldUsername}$`, 'i') } });
+      if (player) {
+        if (username) player.name = username;
+        if (avatar) player.avatar = avatar;
+        await player.save();
+      }
+    }
+
+    res.json({
+      success: true,
+      message: 'Profile details updated successfully!',
+      data: {
+        _id: user._id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        avatar: user.avatar,
+        isEmailVerified: user.isEmailVerified
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// @desc    Update user password
+// @route   PUT /api/auth/updatepassword
+// @access  Private
+exports.updatePassword = async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    // Verify current password
+    const isMatch = await user.comparePassword(currentPassword);
+    if (!isMatch) {
+      return res.status(401).json({ success: false, message: 'Incorrect current password.' });
+    }
+
+    user.password = newPassword;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Password updated successfully!'
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+

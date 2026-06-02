@@ -227,6 +227,122 @@ export default function DashboardPage() {
                     )}
                   </div>
                 </div>
+
+                {/* Detailed Career Stats Section */}
+                <div className="space-y-8 mb-8">
+                  <div className="border-b border-[#66fcf1]/10 pb-4">
+                    <h2 className="text-xl font-black text-white uppercase tracking-wider">My Career Statistics</h2>
+                    <p className="text-gray-400 text-sm mt-1">Comprehensive breakdown of your performance across all matches.</p>
+                  </div>
+
+                  {/* Batting Career Stats Table */}
+                  <div className="glass-card p-6 border-[#66fcf1]/10">
+                    <div className="flex items-center space-x-2 mb-4 border-b border-[#66fcf1]/10 pb-3">
+                      <Activity className="w-5 h-5 text-[#66fcf1]" />
+                      <h3 className="text-sm font-extrabold uppercase tracking-wider text-white font-mono">Batting statistics</h3>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-sm text-gray-400">
+                        <thead className="text-xs uppercase text-gray-500 font-bold border-b border-white/5">
+                          <tr>
+                            <th className="py-3 px-3 text-center">Matches</th>
+                            <th className="py-3 px-3 text-center">Innings</th>
+                            <th className="py-3 px-3 text-center">Runs</th>
+                            <th className="py-3 px-3 text-center">Highest Score</th>
+                            <th className="py-3 px-3 text-center">Average</th>
+                            <th className="py-3 px-3 text-center">Strike Rate</th>
+                            <th className="py-3 px-3 text-center">Fours (4s)</th>
+                            <th className="py-3 px-3 text-center">Sixes (6s)</th>
+                            <th className="py-3 px-3 text-center">Fifties (50s)</th>
+                            <th className="py-3 px-3 text-center">Hundreds (100s)</th>
+                            <th className="py-3 px-3 text-center">Ducks</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr className="border-b border-white/5 hover:bg-white/5 transition">
+                            <td className="py-4 px-3 font-mono font-bold text-white text-center">{playerData?.stats?.batting?.matches || 0}</td>
+                            <td className="py-4 px-3 font-mono text-white text-center">{playerData?.stats?.batting?.innings || 0}</td>
+                            <td className="py-4 px-3 font-mono font-bold text-emerald-400 text-center">{playerData?.stats?.batting?.runs || 0}</td>
+                            <td className="py-4 px-3 font-mono text-amber-400 text-center">{playerData?.stats?.batting?.highestScore || 0}</td>
+                            <td className="py-4 px-3 font-mono text-white text-center">{playerData?.stats?.batting?.average ? playerData.stats.batting.average.toFixed(2) : '0.00'}</td>
+                            <td className="py-4 px-3 font-mono text-white text-center">{playerData?.stats?.batting?.strikeRate ? playerData.stats.batting.strikeRate.toFixed(2) : '0.00'}</td>
+                            <td className="py-4 px-3 font-mono text-white text-center">{playerData?.stats?.batting?.fours || 0}</td>
+                            <td className="py-4 px-3 font-mono text-cyan-400 text-center">{playerData?.stats?.batting?.sixes || 0}</td>
+                            <td className="py-4 px-3 font-mono text-purple-400 text-center">{playerData?.stats?.batting?.fifties || 0}</td>
+                            <td className="py-4 px-3 font-mono text-yellow-400 text-center">{playerData?.stats?.batting?.hundreds || 0}</td>
+                            <td className="py-4 px-3 font-mono text-red-500 text-center">{playerData?.stats?.batting?.ducks || 0}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Bowling Career Stats Table */}
+                  <div className="glass-card p-6 border-[#66fcf1]/10">
+                    <div className="flex items-center space-x-2 mb-4 border-b border-[#66fcf1]/10 pb-3">
+                      <Trophy className="w-5 h-5 text-[#66fcf1]" />
+                      <h3 className="text-sm font-extrabold uppercase tracking-wider text-white font-mono">Bowling statistics</h3>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-sm text-gray-400">
+                        <thead className="text-xs uppercase text-gray-500 font-bold border-b border-white/5">
+                          <tr>
+                            <th className="py-3 px-3 text-center">Matches</th>
+                            <th className="py-3 px-3 text-center">Overs</th>
+                            <th className="py-3 px-3 text-center">Runs Conceded</th>
+                            <th className="py-3 px-3 text-center">Wickets</th>
+                            <th className="py-3 px-3 text-center">Best Bowling</th>
+                            <th className="py-3 px-3 text-center">Economy</th>
+                            <th className="py-3 px-3 text-center">Average</th>
+                            <th className="py-3 px-3 text-center">Maidens</th>
+                            <th className="py-3 px-3 text-center">Five Wickets (5w)</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr className="border-b border-white/5 hover:bg-white/5 transition">
+                            <td className="py-4 px-3 font-mono font-bold text-white text-center">{playerData?.stats?.bowling?.matches || 0}</td>
+                            <td className="py-4 px-3 font-mono text-white text-center font-bold">
+                              {playerData?.stats?.bowling?.ballsBowled ? `${Math.floor(playerData.stats.bowling.ballsBowled / 6)}.${playerData.stats.bowling.ballsBowled % 6}` : '0.0'}
+                            </td>
+                            <td className="py-4 px-3 font-mono text-red-400 text-center">{playerData?.stats?.bowling?.runsConceded || 0}</td>
+                            <td className="py-4 px-3 font-mono font-bold text-pink-400 text-center">{playerData?.stats?.bowling?.wickets || 0}</td>
+                            <td className="py-4 px-3 font-mono text-amber-400 text-center">{playerData?.stats?.bowling?.bestBowling || '0/0'}</td>
+                            <td className="py-4 px-3 font-mono text-white text-center">{playerData?.stats?.bowling?.economy ? playerData.stats.bowling.economy.toFixed(2) : '0.00'}</td>
+                            <td className="py-4 px-3 font-mono text-white text-center">{playerData?.stats?.bowling?.average ? playerData.stats.bowling.average.toFixed(2) : '0.00'}</td>
+                            <td className="py-4 px-3 font-mono text-white text-center">{playerData?.stats?.bowling?.maidens || 0}</td>
+                            <td className="py-4 px-3 font-mono text-white text-center">{playerData?.stats?.bowling?.fiveWickets || 0}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Fielding Career Stats Table */}
+                  <div className="glass-card p-6 border-[#66fcf1]/10">
+                    <div className="flex items-center space-x-2 mb-4 border-b border-[#66fcf1]/10 pb-3">
+                      <User className="w-5 h-5 text-[#66fcf1]" />
+                      <h3 className="text-sm font-extrabold uppercase tracking-wider text-white font-mono">Fielding statistics</h3>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-sm text-gray-400">
+                        <thead className="text-xs uppercase text-gray-500 font-bold border-b border-white/5">
+                          <tr>
+                            <th className="py-3 px-3 text-center">Catches</th>
+                            <th className="py-3 px-3 text-center">Run Outs</th>
+                            <th className="py-3 px-3 text-center">Stumpings</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr className="border-b border-white/5 hover:bg-white/5 transition">
+                            <td className="py-4 px-3 font-mono font-bold text-white text-center">{playerData?.stats?.fielding?.catches || playerData?.catches || 0}</td>
+                            <td className="py-4 px-3 font-mono font-bold text-[#66fcf1] text-center">{playerData?.stats?.fielding?.runOuts || 0}</td>
+                            <td className="py-4 px-3 font-mono font-bold text-white text-center">{playerData?.stats?.fielding?.stumpings || 0}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
               </>
             )}
 

@@ -422,6 +422,14 @@ exports.updateMatchScore = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Match not found' });
     }
 
+    if (match.status === 'Completed') {
+      return res.status(400).json({ success: false, message: 'Match is already completed.' });
+    }
+
+    if (match.innings.length === 1 && match.target > 0) {
+      return res.status(400).json({ success: false, message: 'First innings is completed. Please setup the second innings before scoring.' });
+    }
+
     if (match.status !== 'Live') {
       match.status = 'Live';
     }
@@ -778,6 +786,37 @@ exports.updateMatchScore = async (req, res) => {
         if (suggestedPOM) {
           match.playerOfMatch = suggestedPOM;
         }
+      }
+    }
+
+    // Check if 1st innings is completed (overs count reached or batting team all out)
+    if (match.innings.length === 1) {
+      const activeInnings = match.innings[0];
+      const battingTeamId = activeInnings.battingTeam.toString();
+      const isTeamA = battingTeamId === match.teamA.toString();
+      const scoreObj = isTeamA ? match.score.teamA : match.score.teamB;
+      
+      const battingPlayingXI = isTeamA ? match.playingXIA : match.playingXIB;
+      const totalBattingWickets = (battingPlayingXI && battingPlayingXI.length > 0) ? battingPlayingXI.length - 1 : 10;
+      
+      const oversToBalls = (o) => {
+        const oInt = Math.floor(o);
+        const b = Math.round((o - oInt) * 10);
+        return (oInt * 6) + b;
+      };
+      
+      const ballsBowled = oversToBalls(scoreObj.overs);
+      const maxBalls = match.oversCount * 6;
+      
+      if (ballsBowled >= maxBalls || scoreObj.wickets >= totalBattingWickets) {
+        // First Innings is Completed!
+        match.target = scoreObj.runs + 1;
+        
+        // Clear active live state values to force second innings setup
+        match.liveState.striker = null;
+        match.liveState.nonStriker = null;
+        match.liveState.currentBowler = null;
+        match.liveState.currentOverRuns = [];
       }
     }
 
@@ -1188,6 +1227,11 @@ exports.undoLastBall = async (req, res) => {
 
     // 6. Delete commentary entry
     match.commentary.shift();
+
+    // If we undo a ball and it is the 1st innings, make sure target is reset to 0
+    if (match.innings.length === 1) {
+      match.target = 0;
+    }
 
     await match.save();
 

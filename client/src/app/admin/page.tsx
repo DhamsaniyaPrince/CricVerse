@@ -278,6 +278,8 @@ export default function AdminScoringPage() {
           fullMatch.liveState.nonStriker &&
           fullMatch.liveState.currentBowler;
 
+        const isFirstInningsComplete = fullMatch.target > 0 && fullMatch.innings && fullMatch.innings.length === 1;
+
         if (fullMatch.status === 'Ready') {
           // Sync playing XI A & B from match
           setPlayingXI_A(fullMatch.playingXIA ? fullMatch.playingXIA.map((p: any) => p._id || p) : []);
@@ -289,6 +291,12 @@ export default function AdminScoringPage() {
           }
           setShowSetupForm(true);
           setWizardStep(5); // Skip directly to striker/non-striker/bowler selection!
+        } else if (isFirstInningsComplete) {
+          setShowSetupForm(true);
+          setWizardStep(4); // Select Opening Batsmen for Innings 2!
+          setStrikerId('');
+          setNonStrikerId('');
+          setBowlerId('');
         } else if (fullMatch.status === 'Scheduled' || fullMatch.status === 'Upcoming' || !hasLiveState) {
           setShowSetupForm(true);
           setWizardStep(2);

@@ -105,7 +105,7 @@ export default function Navbar({ onMenuClick }: { onMenuClick?: () => void }) {
       fetchNotifications();
 
       // Connect to Socket.io for user private room
-      const socket = io(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000', {
+      const socket = io(process.env.NEXT_PUBLIC_API_URL || 'http://process.env.REACT_APP_API_URLgit status', {
         transports: ['websocket'],
         upgrade: false
       });

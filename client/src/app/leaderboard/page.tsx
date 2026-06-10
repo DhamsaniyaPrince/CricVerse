@@ -1,33 +1,26 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
 import Navbar from '@/components/layout/Navbar';
 import Sidebar from '@/components/layout/Sidebar';
 import api from '@/utils/api';
-import { io } from 'socket.io-client';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useRouter } from 'next/navigation';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
-  Trophy,
-  Zap,
-  Target,
-  Activity,
-  Flame,
-  Search,
-  Filter,
-  RefreshCw,
-  User,
-  Users,
-  TrendingUp,
-  TrendingDown,
-  Minus,
-  Award,
-  Sparkles,
-  ChevronRight,
-  Shield,
-  Calendar,
-  AlertCircle
+    Activity,
+    AlertCircle,
+    Award,
+    Filter,
+    Flame,
+    Minus,
+    RefreshCw,
+    Search,
+    Sparkles,
+    TrendingDown,
+    TrendingUp,
+    Trophy
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { io } from 'socket.io-client';
 
 interface TournamentItem {
   _id: string;
@@ -176,7 +169,7 @@ export default function LeaderboardPage() {
   useEffect(() => {
     if (!liveMatchId) return;
 
-    const socket = io(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000', {
+    const socket = io(process.env.NEXT_PUBLIC_API_URL || 'http://process.env.REACT_APP_API_URLgit status', {
       transports: ['websocket'],
       upgrade: false
     });

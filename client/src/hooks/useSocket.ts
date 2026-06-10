@@ -1,9 +1,9 @@
 import { useEffect, useRef } from 'react';
 import { useDispatch } from 'react-redux';
 import { io, Socket } from 'socket.io-client';
-import { updateLiveScore, appendCommentary, appendWagonPoint } from '../store/slices/matchSlice';
+import { appendCommentary, appendWagonPoint, updateLiveScore } from '../store/slices/matchSlice';
 
-const SOCKET_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const SOCKET_URL = process.env.NEXT_PUBLIC_API_URL || 'http://process.env.REACT_APP_API_URLgit status';
 
 export const useSocket = (matchId?: string, onBallPlayed?: (data: any) => void) => {
   const dispatch = useDispatch();

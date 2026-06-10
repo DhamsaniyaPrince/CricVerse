@@ -142,7 +142,7 @@ export default function TournamentDetailPage() {
   const fetchRegistrations = async () => {
     // Only load if authorized (organizer or admin)
     if (!tournament) return;
-    const canManage = isAuthenticated && user && (user.role === 'admin' || tournament.organizer._id === user._id);
+    const canManage = isAuthenticated && user && (user.role === 'admin' || tournament.organizer?._id === user._id);
     if (!canManage) return;
 
     try {
@@ -288,16 +288,16 @@ export default function TournamentDetailPage() {
   }
 
   // Permission Checks
-  const isOrganizer = isAuthenticated && user && (user.role === 'admin' || tournament.organizer._id === user._id);
+  const isOrganizer = isAuthenticated && user && (user.role === 'admin' || tournament.organizer?._id === user._id);
   const isCaptain = isAuthenticated && user && (user.role === 'captain' || user.role === 'admin' || myTeams.length > 0);
   const registeredCount = tournament.teams?.length || 0;
   const capacityPercentage = Math.min(100, Math.round((registeredCount / tournament.maxTeams) * 100));
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#0b0c10]">
+    <div className="flex flex-col h-screen bg-[#0b0c10] overflow-hidden">
       <Navbar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
 
-      <div className="flex flex-1">
+      <div className="flex flex-1 overflow-hidden">
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
         <main className="flex-1 px-4 md:px-8 py-8 overflow-y-auto max-w-7xl mx-auto w-full">
@@ -430,7 +430,7 @@ export default function TournamentDetailPage() {
                     <div className="glass-card p-5 border-[#66fcf1]/5 text-center">
                       <Users className="w-5 h-5 text-gray-600 mx-auto mb-2" />
                       <span className="text-[9px] text-gray-500 font-bold block uppercase">League Organizer</span>
-                      <span className="text-sm font-bold text-white mt-1 block uppercase">{tournament.organizer.username}</span>
+                      <span className="text-sm font-bold text-white mt-1 block uppercase">{tournament.organizer?.username || 'Unknown'}</span>
                     </div>
                   </div>
                 </div>
@@ -510,7 +510,7 @@ export default function TournamentDetailPage() {
                 exit={{ opacity: 0, y: -10 }}
                 className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
               >
-                {tournament.teams.map((team) => (
+                {tournament.teams?.filter(t => t !== null).map((team) => (
                   <div
                     key={team._id}
                     onClick={() => router.push(`/teams/${team._id}`)}
@@ -520,7 +520,7 @@ export default function TournamentDetailPage() {
                       {team.logo ? (
                         <img src={team.logo} alt={team.name} className="w-full h-full object-cover" />
                       ) : (
-                        team.name.charAt(0).toUpperCase()
+                        team.name?.charAt(0).toUpperCase() || 'T'
                       )}
                     </div>
                     <div>
@@ -568,7 +568,8 @@ export default function TournamentDetailPage() {
                     </thead>
                     <tbody>
                       {tournament.pointsTable
-                        ?.sort((a, b) => b.points - a.points || b.nrr - a.nrr)
+                        ?.filter(row => row && row.team)
+                        .sort((a, b) => b.points - a.points || b.nrr - a.nrr)
                         .map((row, idx) => (
                           <tr key={idx} className="border-b border-white/5 hover:bg-white/5 transition">
                             <td className="py-3.5 px-3 font-bold text-white flex items-center space-x-2">
@@ -659,7 +660,7 @@ export default function TournamentDetailPage() {
                     <div className="border-t border-white/5 pt-3 flex items-center justify-between">
                       <span className="text-xs text-gray-400 font-semibold italic">
                         {match.status === 'Completed' && match.result
-                          ? `${match.result.winner?.name || 'Winner'} won ${match.result.margin}`
+                          ? `${match.result.winner?.name || 'Winner'} ${match.result.margin?.toLowerCase().startsWith('won') ? match.result.margin : 'won ' + match.result.margin}`
                           : match.status === 'Cancelled'
                           ? 'Match Cancelled'
                           : `${match.status} Match`}
@@ -829,7 +830,7 @@ export default function TournamentDetailPage() {
                   </h3>
                   
                   <div className="space-y-4">
-                    {registrations.map((reg) => (
+                    {registrations.filter(r => r && r.team).map((reg) => (
                       <div key={reg._id} className="p-4 rounded-xl border border-white/5 bg-[#0b0c10]/40 flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div className="flex items-center space-x-4">
                           <div className="w-10 h-10 bg-gray-900 border border-white/5 rounded-xl flex items-center justify-center font-bold text-white">

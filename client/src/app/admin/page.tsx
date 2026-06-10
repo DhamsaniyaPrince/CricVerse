@@ -71,7 +71,7 @@ interface Match {
   title: string;
   teamA: { _id: string; name: string; logo?: string; players: Player[] };
   teamB: { _id: string; name: string; logo?: string; players: Player[] };
-  status: 'Upcoming' | 'Live' | 'Completed';
+  status: 'Scheduled' | 'Ready' | 'Live' | 'Completed' | 'Cancelled' | 'Upcoming';
   oversCount: number;
   tournament?: string | { _id: string; name?: string };
   playingXIA?: Player[];
@@ -263,47 +263,50 @@ export default function AdminScoringPage() {
     }
   }, [selectedMatch]);
 
+  const syncMatchUIState = (fullMatch: Match) => {
+    setSelectedMatch(fullMatch);
+
+    // Check if Setup Form is needed
+    const hasLiveState =
+      fullMatch.liveState &&
+      fullMatch.liveState.striker &&
+      fullMatch.liveState.nonStriker &&
+      fullMatch.liveState.currentBowler;
+
+    const isFirstInningsComplete = (fullMatch.target || 0) > 0 && fullMatch.innings && fullMatch.innings.length === 1;
+
+    if (fullMatch.status === 'Ready') {
+      // Sync playing XI A & B from match
+      setPlayingXI_A(fullMatch.playingXIA ? fullMatch.playingXIA.map((p: any) => p._id || p) : []);
+      setPlayingXI_B(fullMatch.playingXIB ? fullMatch.playingXIB.map((p: any) => p._id || p) : []);
+      if (fullMatch.toss?.wonBy) {
+        const wonByVal = fullMatch.toss.wonBy;
+        setTossWinnerId(typeof wonByVal === 'object' && wonByVal ? wonByVal._id : wonByVal);
+        setTossDecision(fullMatch.toss.decision || 'Batting');
+      }
+      setShowSetupForm(true);
+      setWizardStep(5); // Skip directly to striker/non-striker/bowler selection!
+    } else if (isFirstInningsComplete) {
+      setShowSetupForm(true);
+      setWizardStep(4); // Select Opening Batsmen for Innings 2!
+      setStrikerId('');
+      setNonStrikerId('');
+      setBowlerId('');
+    } else if (fullMatch.status === 'Scheduled' || fullMatch.status === 'Upcoming' || !hasLiveState) {
+      setShowSetupForm(true);
+      setWizardStep(2);
+    } else {
+      setShowSetupForm(false);
+      detectOverCompletion(fullMatch);
+    }
+  };
+
   const handleSelectMatch = async (match: Match) => {
     setError(null);
     try {
       const response = await api.get(`/matches/${match._id}`);
       if (response.data.success) {
-        const fullMatch = response.data.data;
-        setSelectedMatch(fullMatch);
-
-        // Check if Setup Form is needed
-        const hasLiveState =
-          fullMatch.liveState &&
-          fullMatch.liveState.striker &&
-          fullMatch.liveState.nonStriker &&
-          fullMatch.liveState.currentBowler;
-
-        const isFirstInningsComplete = fullMatch.target > 0 && fullMatch.innings && fullMatch.innings.length === 1;
-
-        if (fullMatch.status === 'Ready') {
-          // Sync playing XI A & B from match
-          setPlayingXI_A(fullMatch.playingXIA ? fullMatch.playingXIA.map((p: any) => p._id || p) : []);
-          setPlayingXI_B(fullMatch.playingXIB ? fullMatch.playingXIB.map((p: any) => p._id || p) : []);
-          if (fullMatch.toss?.wonBy) {
-            const wonByVal = fullMatch.toss.wonBy;
-            setTossWinnerId(typeof wonByVal === 'object' && wonByVal ? wonByVal._id : wonByVal);
-            setTossDecision(fullMatch.toss.decision || 'Batting');
-          }
-          setShowSetupForm(true);
-          setWizardStep(5); // Skip directly to striker/non-striker/bowler selection!
-        } else if (isFirstInningsComplete) {
-          setShowSetupForm(true);
-          setWizardStep(4); // Select Opening Batsmen for Innings 2!
-          setStrikerId('');
-          setNonStrikerId('');
-          setBowlerId('');
-        } else if (fullMatch.status === 'Scheduled' || fullMatch.status === 'Upcoming' || !hasLiveState) {
-          setShowSetupForm(true);
-          setWizardStep(2);
-        } else {
-          setShowSetupForm(false);
-          detectOverCompletion(fullMatch);
-        }
+        syncMatchUIState(response.data.data);
       }
     } catch (err) {
       console.error(err);
@@ -528,7 +531,7 @@ export default function AdminScoringPage() {
       if (response.data.success) {
         triggerNotification(`Innings ${inningsNumber} successfully started!`);
         setShowSetupForm(false);
-        await handleSelectMatch(response.data.data);
+        syncMatchUIState(response.data.data);
       }
     } catch (err: any) {
       console.error(err);
@@ -560,7 +563,7 @@ export default function AdminScoringPage() {
       const response = await api.post(`/matches/${selectedMatch._id}/ball`, payload);
       if (response.data.success) {
         setWagonPoint(null);
-        await handleSelectMatch(response.data.data);
+        syncMatchUIState(response.data.data);
       }
     } catch (err: any) {
       console.error(err);
@@ -594,7 +597,7 @@ export default function AdminScoringPage() {
       const response = await api.post(`/matches/${selectedMatch._id}/ball`, payload);
       if (response.data.success) {
         setWagonPoint(null);
-        await handleSelectMatch(response.data.data);
+        syncMatchUIState(response.data.data);
       }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Could not record extra');
@@ -629,7 +632,7 @@ export default function AdminScoringPage() {
       if (response.data.success) {
         setWagonPoint(null);
         setExtraTypeForSelection(null);
-        await handleSelectMatch(response.data.data);
+        syncMatchUIState(response.data.data);
       }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Could not record bye/leg bye');
@@ -679,7 +682,7 @@ export default function AdminScoringPage() {
         setWagonPoint(null);
         setIncomingBatsmanId('');
         setFielderId('');
-        await handleSelectMatch(response.data.data);
+        syncMatchUIState(response.data.data);
         triggerNotification('Wicket recorded successfully!');
       }
     } catch (err: any) {
@@ -714,7 +717,7 @@ export default function AdminScoringPage() {
       const response = await api.post(`/matches/${selectedMatch._id}/ball`, payload);
       if (response.data.success) {
         setWagonPoint(null);
-        await handleSelectMatch(response.data.data);
+        syncMatchUIState(response.data.data);
         triggerNotification('Wide recorded successfully!');
       }
     } catch (err: any) {
@@ -749,7 +752,7 @@ export default function AdminScoringPage() {
       const response = await api.post(`/matches/${selectedMatch._id}/ball`, payload);
       if (response.data.success) {
         setWagonPoint(null);
-        await handleSelectMatch(response.data.data);
+        syncMatchUIState(response.data.data);
         triggerNotification('No Ball recorded successfully!');
       }
     } catch (err: any) {
@@ -784,7 +787,7 @@ export default function AdminScoringPage() {
       const response = await api.post(`/matches/${selectedMatch._id}/ball`, payload);
       if (response.data.success) {
         setWagonPoint(null);
-        await handleSelectMatch(response.data.data);
+        syncMatchUIState(response.data.data);
         triggerNotification('Byes recorded successfully!');
       }
     } catch (err: any) {
@@ -819,7 +822,7 @@ export default function AdminScoringPage() {
       const response = await api.post(`/matches/${selectedMatch._id}/ball`, payload);
       if (response.data.success) {
         setWagonPoint(null);
-        await handleSelectMatch(response.data.data);
+        syncMatchUIState(response.data.data);
         triggerNotification('Leg Byes recorded successfully!');
       }
     } catch (err: any) {
@@ -872,7 +875,7 @@ export default function AdminScoringPage() {
         setFielderId('');
         setRunOutCompletedRuns(0);
         setRunOutDismissedPlayerId('');
-        await handleSelectMatch(response.data.data);
+        syncMatchUIState(response.data.data);
         triggerNotification('Run Out recorded successfully!');
       }
     } catch (err: any) {
@@ -891,7 +894,7 @@ export default function AdminScoringPage() {
     try {
       const response = await api.put(`/matches/${selectedMatch._id}/swap-strike`);
       if (response.data.success) {
-        await handleSelectMatch(response.data.data);
+        syncMatchUIState(response.data.data);
         triggerNotification('Strike swapped successfully!');
       }
     } catch (err: any) {
@@ -914,7 +917,7 @@ export default function AdminScoringPage() {
       const response = await api.put(`/matches/${selectedMatch._id}/change-bowler`, { bowlerId: manualBowlerId });
       if (response.data.success) {
         setManualBowlerId('');
-        await handleSelectMatch(response.data.data);
+        syncMatchUIState(response.data.data);
         triggerNotification('Bowler changed successfully!');
       }
     } catch (err: any) {
@@ -937,7 +940,7 @@ export default function AdminScoringPage() {
       if (response.data.success) {
         setShowNewBowlerPrompt(false);
         setNewBowlerId('');
-        await handleSelectMatch(response.data.data);
+        syncMatchUIState(response.data.data);
         triggerNotification('Bowler set for new over!');
       }
     } catch (err: any) {
@@ -960,7 +963,7 @@ export default function AdminScoringPage() {
       const response = await api.post(`/matches/${selectedMatch._id}/undo`);
       if (response.data.success) {
         triggerNotification('Last ball undone successfully.');
-        await handleSelectMatch(response.data.data);
+        syncMatchUIState(response.data.data);
       }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Undo action failed');
@@ -976,12 +979,41 @@ export default function AdminScoringPage() {
     if (!confirm) return;
 
     try {
-      const runsA = selectedMatch.score.teamA.runs;
-      const runsB = selectedMatch.score.teamB.runs;
-      const winnerId = runsA > runsB ? selectedMatch.teamA._id : selectedMatch.teamB._id;
-      const margin = runsA > runsB 
-        ? `by ${runsA - runsB} runs` 
-        : `by ${10 - selectedMatch.score.teamB.wickets} wickets`;
+      const innings = selectedMatch.innings;
+      let winnerId = null;
+      let margin = 'Match Completed';
+      if (innings && innings.length > 0) {
+        const firstInningsBattingTeamId = typeof innings[0].battingTeam === 'object' && innings[0].battingTeam
+          ? innings[0].battingTeam._id
+          : innings[0].battingTeam;
+        const isTeamABattedFirst = firstInningsBattingTeamId === selectedMatch.teamA._id;
+        const runsA = selectedMatch.score.teamA.runs;
+        const runsB = selectedMatch.score.teamB.runs;
+        
+        if (runsA === runsB) {
+          margin = 'Match Tied';
+        } else if (runsA > runsB) {
+          winnerId = selectedMatch.teamA._id;
+          if (isTeamABattedFirst) {
+            margin = `won by ${runsA - runsB} runs`;
+          } else {
+            const playingXIA = selectedMatch.playingXIA || [];
+            const totalWickets = playingXIA.length > 0 ? playingXIA.length - 1 : 10;
+            const remainingWickets = totalWickets - selectedMatch.score.teamA.wickets;
+            margin = `won by ${remainingWickets} wickets`;
+          }
+        } else {
+          winnerId = selectedMatch.teamB._id;
+          if (isTeamABattedFirst) {
+            const playingXIB = selectedMatch.playingXIB || [];
+            const totalWickets = playingXIB.length > 0 ? playingXIB.length - 1 : 10;
+            const remainingWickets = totalWickets - selectedMatch.score.teamB.wickets;
+            margin = `won by ${remainingWickets} wickets`;
+          } else {
+            margin = `won by ${runsB - runsA} runs`;
+          }
+        }
+      }
 
       const response = await api.post(`/matches/${selectedMatch._id}/end`, {
         winnerId,
@@ -1026,7 +1058,7 @@ export default function AdminScoringPage() {
       const response = await api.put(`/matches/${selectedMatch._id}/player-of-match`, { playerId });
       if (response.data.success) {
         setSelectedPomId(playerId);
-        await handleSelectMatch(response.data.data);
+        syncMatchUIState(response.data.data);
         triggerNotification('Player of the Match overridden successfully!');
       }
     } catch (err: any) {
@@ -1066,10 +1098,10 @@ export default function AdminScoringPage() {
 
   return (
     <ProtectedRoute allowedRoles={['organizer', 'admin']}>
-      <div className="flex flex-col min-h-screen bg-[#0b0c10]">
+      <div className="flex flex-col h-screen bg-[#0b0c10] overflow-hidden">
         <Navbar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
 
-        <div className="flex flex-1">
+        <div className="flex flex-1 overflow-hidden">
           <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
           <main className="flex-1 px-4 md:px-8 py-8 overflow-y-auto max-w-7xl mx-auto w-full">
@@ -1854,7 +1886,7 @@ export default function AdminScoringPage() {
                                     typeof selectedMatch.result.winner === 'object'
                                       ? selectedMatch.result.winner.name
                                       : (selectedMatch.result.winner === selectedMatch.teamA._id ? selectedMatch.teamA.name : selectedMatch.teamB.name)
-                                  } ${selectedMatch.result.margin}`
+                                  } ${selectedMatch.result.margin ? (selectedMatch.result.margin.startsWith('won') ? selectedMatch.result.margin : 'won ' + selectedMatch.result.margin) : 'won'}`
                                 ) : (
                                   selectedMatch.result.margin || 'Match Tied'
                                 )
@@ -2343,7 +2375,7 @@ export default function AdminScoringPage() {
                         <div className="space-y-3 max-h-64 overflow-y-auto pr-2">
                           {selectedMatch.commentary.slice(0, 10).map((cmt, i) => (
                             <div key={i} className="text-xs border-b border-white/5 pb-2 flex items-start space-x-2.5">
-                              <span className="font-mono font-bold text-gray-500">{cmt.overNum}.{cmt.ballNum}</span>
+                              <span className="font-mono font-bold text-gray-500">{cmt.ballNum === 6 ? `${cmt.overNum + 1}.0` : `${cmt.overNum}.${cmt.ballNum}`}</span>
                               <p className="text-gray-400 leading-normal">{cmt.text}</p>
                             </div>
                           ))}

@@ -77,6 +77,15 @@ export default function SettingsPage() {
       setSoundEnabled(savedSound);
       const savedNotify = localStorage.getItem('notify_enabled') !== 'false';
       setNotificationsEnabled(savedNotify);
+
+      const handleThemeChange = () => {
+        const currentTheme = (localStorage.getItem('theme') as 'dark' | 'light') || 'dark';
+        setTheme(currentTheme);
+      };
+      window.addEventListener('theme-changed', handleThemeChange);
+      return () => {
+        window.removeEventListener('theme-changed', handleThemeChange);
+      };
     }
   }, [user]);
 
@@ -265,10 +274,10 @@ export default function SettingsPage() {
 
   return (
     <ProtectedRoute>
-      <div className="flex flex-col min-h-screen bg-[#0b0c10]">
+      <div className="flex flex-col h-screen bg-[#0b0c10] overflow-hidden">
         <Navbar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
 
-        <div className="flex flex-1">
+        <div className="flex flex-1 overflow-hidden">
           <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
           <main className="flex-1 px-4 md:px-8 py-8 overflow-y-auto max-w-7xl mx-auto w-full">
@@ -457,10 +466,10 @@ export default function SettingsPage() {
                               onChange={(e: any) => setRole(e.target.value)}
                               className="w-full bg-[#0b0c10]/60 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-[#66fcf1]/50"
                             >
-                              <option value="player" className="bg-[#0b0c10]">Player / Spectator</option>
-                              <option value="captain" className="bg-[#0b0c10]">Team Captain</option>
-                              <option value="organizer" className="bg-[#0b0c10]">Organizer / Scorer</option>
-                              <option value="admin" className="bg-[#0b0c10]">System Administrator</option>
+                               <option value="player" className="bg-[#0b0c10]">Player</option>
+                               <option value="captain" className="bg-[#0b0c10]">Team Manager</option>
+                               <option value="organizer" className="bg-[#0b0c10]">Tournament Organizer</option>
+                               <option value="admin" className="bg-[#0b0c10]">System Administrator</option>
                             </select>
                           </div>
                         </div>

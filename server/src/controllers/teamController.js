@@ -1,6 +1,7 @@
 const Team = require('../models/Team');
 const Player = require('../models/Player');
 const crypto = require('crypto');
+const { logAction } = require('../services/auditService');
 
 // Helper to generate a 6-character unique join code
 const generateJoinCode = () => {
@@ -40,6 +41,8 @@ exports.createTeam = async (req, res) => {
       userId: req.user._id,
       teamRole: 'Captain'
     });
+
+    await logAction(req, 'Team Created', `Created team "${team.name}" (ID: ${team._id}).`);
 
     res.status(201).json({ success: true, data: team });
   } catch (error) {
@@ -115,7 +118,9 @@ exports.updateTeam = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Team not found' });
     }
 
-    if (team.owner.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+    const { isCaptainOrAdminOfTeam } = require('../middleware/auth');
+    const isAuthorized = await isCaptainOrAdminOfTeam(req.user, team._id);
+    if (!isAuthorized) {
       return res.status(403).json({ success: false, message: 'Not authorized to update this team' });
     }
 
@@ -123,6 +128,8 @@ exports.updateTeam = async (req, res) => {
       new: true,
       runValidators: true
     });
+
+    await logAction(req, 'Team Updated', `Updated team "${team.name}" (ID: ${team._id}).`);
 
     res.json({ success: true, data: team });
   } catch (error) {
@@ -173,7 +180,9 @@ exports.invitePlayer = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Team not found' });
     }
 
-    if (team.owner.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+    const { isCaptainOrAdminOfTeam } = require('../middleware/auth');
+    const isAuthorized = await isCaptainOrAdminOfTeam(req.user, team._id);
+    if (!isAuthorized) {
       return res.status(403).json({ success: false, message: 'Not authorized to invite to this team' });
     }
 
@@ -261,7 +270,9 @@ exports.respondToJoinRequest = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Team not found' });
     }
 
-    if (team.owner.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+    const { isCaptainOrAdminOfTeam } = require('../middleware/auth');
+    const isAuthorized = await isCaptainOrAdminOfTeam(req.user, team._id);
+    if (!isAuthorized) {
       return res.status(403).json({ success: false, message: 'Not authorized to manage join requests' });
     }
 
@@ -297,6 +308,18 @@ exports.respondToJoinRequest = async (req, res) => {
         { teamRole: 'Player' },
         { upsert: true, new: true }
       );
+
+      const { createNotification } = require('../services/notificationService');
+      await createNotification({
+        recipient: requestingUser._id,
+        title: 'Team Join Request Approved',
+        message: `Your request to join team "${team.name}" has been approved!`,
+        type: 'team_approved',
+        relatedId: team._id
+      });
+
+      const { logAction } = require('../services/auditService');
+      await logAction(req, 'Team Join Request Approved', `Approved join request of user "${requestingUser.username}" for team "${team.name}".`);
     }
 
     await team.save();
@@ -317,8 +340,10 @@ exports.removePlayer = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Team not found' });
     }
 
-    if (team.owner.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
-      return res.status(403).json({ success: false, message: 'Not authorized' });
+    const { isCaptainOrAdminOfTeam } = require('../middleware/auth');
+    const isAuthorized = await isCaptainOrAdminOfTeam(req.user, team._id);
+    if (!isAuthorized) {
+      return res.status(403).json({ success: false, message: 'Not authorized to manage players' });
     }
 
     const playerObj = await Player.findById(playerId);
@@ -356,8 +381,10 @@ exports.assignCaptain = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Team not found' });
     }
 
-    if (team.owner.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
-      return res.status(403).json({ success: false, message: 'Not authorized' });
+    const { isCaptainOrAdminOfTeam } = require('../middleware/auth');
+    const isAuthorized = await isCaptainOrAdminOfTeam(req.user, team._id);
+    if (!isAuthorized) {
+      return res.status(403).json({ success: false, message: 'Not authorized to assign captain' });
     }
 
     if (!team.players.includes(captainId)) {
@@ -402,8 +429,8 @@ exports.deleteTeam = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Team not found' });
     }
 
-    if (team.owner.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
-      return res.status(403).json({ success: false, message: 'Not authorized to delete this team' });
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Only administrators can delete teams from the system' });
     }
 
     await Team.findByIdAndDelete(req.params.id);
@@ -453,7 +480,9 @@ exports.assignMemberRole = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Team not found' });
     }
 
-    if (team.owner.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+    const { isCaptainOrAdminOfTeam } = require('../middleware/auth');
+    const isAuthorized = await isCaptainOrAdminOfTeam(req.user, team._id);
+    if (!isAuthorized) {
       return res.status(403).json({ success: false, message: 'Not authorized to change roles' });
     }
 

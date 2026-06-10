@@ -38,6 +38,10 @@ app.use('/api/matches', require('./routes/matchRoutes'));
 app.use('/api/analytics', require('./routes/analyticsRoutes'));
 app.use('/api/leaderboard', require('./routes/leaderboardRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
+app.use('/api/notifications', require('./routes/notificationRoutes'));
+app.use('/api/reports', require('./routes/reportRoutes'));
+app.use('/api/share-links', require('./routes/shareRoutes'));
+app.use('/api/awards', require('./routes/awardRoutes'));
 
 // Error Handler Middleware
 app.use((err, req, res, next) => {

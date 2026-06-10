@@ -57,10 +57,10 @@ export default function TournamentsPage() {
   const isHost = isAuthenticated && user && (user.role === 'organizer' || user.role === 'admin');
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#0b0c10]">
+    <div className="flex flex-col h-screen bg-[#0b0c10] overflow-hidden">
       <Navbar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
 
-      <div className="flex flex-1">
+      <div className="flex flex-1 overflow-hidden">
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
         <main className="flex-1 px-4 md:px-8 py-8 overflow-y-auto max-w-7xl mx-auto w-full">
@@ -177,7 +177,8 @@ export default function TournamentsPage() {
                         </thead>
                         <tbody>
                           {tournament.pointsTable
-                            ?.sort((a, b) => b.points - a.points || b.nrr - a.nrr)
+                            ?.filter(row => row && row.team)
+                            .sort((a, b) => b.points - a.points || b.nrr - a.nrr)
                             .slice(0, 4) // Show top 4
                             .map((row, idx) => (
                               <tr key={idx} className="border-b border-white/5 hover:bg-white/5 transition">

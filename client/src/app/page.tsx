@@ -6,7 +6,7 @@ import Navbar from '@/components/layout/Navbar';
 import Sidebar from '@/components/layout/Sidebar';
 import api from '@/utils/api';
 import { Match } from '@/store/slices/matchSlice';
-import { Activity, Trophy, Play, CheckCircle, Database, ChevronRight, Award, Plus, Calendar } from 'lucide-react';
+import { Activity, Trophy, Play, CheckCircle, Database, ChevronRight, Award, Plus, Calendar, AlertCircle } from 'lucide-react';
 
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
@@ -18,20 +18,28 @@ export default function HomePage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [matches, setMatches] = useState<Match[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [standings, setStandings] = useState<any[]>([]);
   const [topPerformers, setTopPerformers] = useState<any[]>([]);
+  const [mounted, setMounted] = useState(false);
 
-  const isHost = isAuthenticated && user && (user.role === 'admin' || user.role === 'organizer');
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const isHost = mounted && isAuthenticated && user && (user.role === 'admin' || user.role === 'organizer');
 
   const fetchMatches = async () => {
     setIsLoading(true);
+    setError(null);
     try {
       const response = await api.get('/matches');
       if (response.data.success) {
         setMatches(response.data.data);
       }
-    } catch (error) {
-      console.error('Error fetching matches:', error);
+    } catch (err: any) {
+      console.error('Error fetching matches:', err);
+      setError(err.response?.data?.message || 'Failed to load match streams. Make sure the backend is active.');
     } finally {
       setIsLoading(false);
     }
@@ -42,11 +50,13 @@ export default function HomePage() {
       const tournResponse = await api.get('/tournaments');
       if (tournResponse.data.success && tournResponse.data.data.length > 0) {
         const activeTourn = tournResponse.data.data.find((t: any) => t.status === 'Live') || tournResponse.data.data[0];
-        if (activeTourn && activeTourn.pointsTable) {
-          const sortedTable = [...activeTourn.pointsTable].sort((a: any, b: any) => {
-            if (b.points !== a.points) return b.points - a.points;
-            return (b.nrr || 0) - (a.nrr || 0);
-          });
+         if (activeTourn && activeTourn.pointsTable) {
+          const sortedTable = [...activeTourn.pointsTable]
+            .filter((row: any) => row && row.team)
+            .sort((a: any, b: any) => {
+              if (b.points !== a.points) return b.points - a.points;
+              return (b.nrr || 0) - (a.nrr || 0);
+            });
           setStandings(sortedTable);
         }
       }
@@ -66,12 +76,12 @@ export default function HomePage() {
   }, []);
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#0b0c10]">
+    <div className="flex flex-col h-screen bg-[#0b0c10] overflow-hidden">
       {/* Top Navbar */}
       <Navbar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
 
       {/* Main Layout Area */}
-      <div className="flex flex-1">
+      <div className="flex flex-1 overflow-hidden">
         {/* Left Sidebar */}
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
@@ -114,10 +124,34 @@ export default function HomePage() {
             </div>
 
             {isLoading ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {[1, 2].map((i) => (
-                  <div key={i} className="glass-card p-6 h-48 animate-pulse bg-gray-900/40"></div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="glass-card p-6 h-48 animate-pulse bg-white/5 relative overflow-hidden flex flex-col justify-between">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="h-4 bg-white/10 rounded w-1/3"></div>
+                      <div className="h-5 bg-white/10 rounded w-16"></div>
+                    </div>
+                    <div className="space-y-4 my-2">
+                      <div className="flex justify-between items-center"><div className="h-5 bg-white/10 rounded w-1/2"></div><div className="h-5 bg-white/10 rounded w-20"></div></div>
+                      <div className="flex justify-between items-center"><div className="h-5 bg-white/10 rounded w-5/12"></div><div className="h-5 bg-white/10 rounded w-24"></div></div>
+                    </div>
+                    <div className="h-5 bg-white/10 rounded w-1/2 mt-4"></div>
+                  </div>
                 ))}
+              </div>
+            ) : error ? (
+              <div className="p-8 bg-red-950/20 border border-red-500/30 rounded-2xl flex flex-col items-center text-center space-y-4 max-w-xl mx-auto shadow-lg shadow-red-500/5">
+                <AlertCircle className="w-12 h-12 text-red-500" />
+                <div>
+                  <h3 className="text-lg font-bold text-white uppercase tracking-wider">Connection Failure</h3>
+                  <p className="text-red-300 text-xs mt-1 leading-relaxed">{error}</p>
+                </div>
+                <button
+                  onClick={() => { fetchMatches(); fetchStandingsAndPerformers(); }}
+                  className="px-5 py-2.5 bg-red-600 hover:bg-red-500 active:scale-95 text-white font-bold rounded-xl text-xs uppercase tracking-wider transition duration-200 cursor-pointer"
+                >
+                  Retry Connection
+                </button>
               </div>
             ) : matches.length === 0 ? (
               <div className="glass-card p-10 text-center border-dashed border-[#66fcf1]/20">
@@ -129,7 +163,7 @@ export default function HomePage() {
                 {isHost && (
                   <button
                     onClick={() => router.push('/tournaments/create')}
-                    className="py-2.5 px-6 bg-gradient-to-r from-[#66fcf1] to-cyan-500 text-[#0b0c10] font-bold rounded-xl shadow-lg shadow-cyan-500/10 hover:scale-[1.02] transition text-xs uppercase"
+                    className="py-2.5 px-6 bg-gradient-to-r from-[#66fcf1] to-cyan-500 text-[#0b0c10] font-bold rounded-xl shadow-lg shadow-cyan-500/10 hover:scale-[1.02] transition text-xs uppercase cursor-pointer"
                   >
                     Host a Tournament
                   </button>
@@ -203,7 +237,7 @@ export default function HomePage() {
                       <div className="border-t border-[#66fcf1]/5 pt-4 mt-4 flex items-center justify-between">
                         <span className="text-xs text-[#66fcf1] font-semibold">
                           {isCompleted && match.result?.winner
-                            ? `${match.result.winner.name} won ${match.result.margin}`
+                            ? `${match.result.winner.name} ${match.result.margin?.toLowerCase().startsWith('won') ? match.result.margin : 'won ' + match.result.margin}`
                             : isLive
                             ? 'Match in progress...'
                             : 'Match Scheduled'}

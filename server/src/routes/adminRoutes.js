@@ -11,7 +11,8 @@ const {
   createReport,
   getReports,
   resolveReport,
-  deleteMatch
+  deleteMatch,
+  getAuditLogs
 } = require('../controllers/adminController');
 
 // User routes (any authenticated user can report a concern)
@@ -30,6 +31,7 @@ router.put('/tournaments/:id/approve', approveTournament);
 router.get('/reports', getReports);
 router.put('/reports/:id/resolve', resolveReport);
 router.delete('/matches/:id', deleteMatch);
+router.get('/audit-logs', getAuditLogs);
 
 // Admin trigger to rebuild all player career stats
 router.post('/recalculate-stats', async (req, res) => {

@@ -65,6 +65,17 @@ const suggestPlayerOfMatch = (match) => {
 const syncMatchPlayersStats = async (match) => {
   try {
     const { recalculatePlayerStats } = require('../services/statsService');
+    const { calculateAndSaveMatchAwards } = require('../services/awardService');
+
+    // Dynamically calculate and save match awards if match is completed
+    if (match.status === 'Completed') {
+      try {
+        await calculateAndSaveMatchAwards(match._id);
+      } catch (awardErr) {
+        console.error(`Failed to calculate awards for match ${match._id}:`, awardErr.message);
+      }
+    }
+
     const playerIds = new Set();
     
     // Add playing XIs
@@ -325,6 +336,12 @@ exports.createMatch = async (req, res) => {
         }
       }
     });
+
+    const { triggerMatchCreatedNotification } = require('../services/notificationService');
+    await triggerMatchCreatedNotification(match);
+
+    const { logAction } = require('../services/auditService');
+    await logAction(req, 'Match Created', `Created match "${match.title}" (ID: ${match._id}) for tournament.`);
 
     res.status(201).json({ success: true, data: match });
   } catch (error) {
@@ -755,9 +772,7 @@ exports.updateMatchScore = async (req, res) => {
         // Chasing Team Wins
         isMatchFinished = true;
         matchWinner = chasingTeamId;
-        const wicketsRemaining = (chasingPlayingXI && chasingPlayingXI.length > 0)
-          ? (chasingPlayingXI.length - chasingScoreObj.wickets)
-          : (10 - chasingScoreObj.wickets);
+        const wicketsRemaining = totalChasingWickets - chasingScoreObj.wickets;
         matchMargin = `won by ${wicketsRemaining} wickets`;
       } else if (chasingScoreObj.wickets >= totalChasingWickets || ballsBowled >= maxBalls) {
         // All Out or Overs Completed
@@ -827,6 +842,33 @@ exports.updateMatchScore = async (req, res) => {
       if (match.tournament) {
         await recalculateTournamentPointsTable(match.tournament);
       }
+
+      const { triggerMatchCompletedNotification, checkTournamentCompletion } = require('../services/notificationService');
+      await triggerMatchCompletedNotification(match);
+
+      const { logAction } = require('../services/auditService');
+      await logAction(req, 'Match Completed', `Match "${match.title}" completed automatically. Winner: ${match.result?.winner || 'Tie/Draw'}.`);
+
+      // Recalculate roster achievements
+      try {
+        const Team = require('../models/Team');
+        const teamA = await Team.findById(match.teamA);
+        const teamB = await Team.findById(match.teamB);
+        const playerIds = [...(teamA?.players || []), ...(teamB?.players || [])];
+        const { recalculatePlayerAchievements } = require('../services/achievementService');
+        for (const pId of playerIds) {
+          await recalculatePlayerAchievements(pId);
+        }
+      } catch (achErr) {
+        console.error('Error updating player achievements:', achErr.message);
+      }
+
+      if (match.tournament) {
+        await checkTournamentCompletion(match.tournament);
+      }
+    } else {
+      const { triggerMatchUpdatedNotification } = require('../services/notificationService');
+      await triggerMatchUpdatedNotification(match);
     }
 
     // 8. Emit Live socket updates
@@ -838,7 +880,20 @@ exports.updateMatchScore = async (req, res) => {
         liveState: {
           ...match.liveState.toObject()
         },
-        innings: match.innings
+        innings: match.innings,
+        lastBall: {
+          runs: runs,
+          isExtra: isExtra,
+          extraType: extraType,
+          extraRuns: extraRunsAdded,
+          isWicket: isWicket,
+          wicketType: wicketType,
+          batsmanOutId: batsmanOutId,
+          strikerId: strikerId,
+          nonStrikerId: nonStrikerId,
+          bowlerId: bowlerId,
+          totalRuns: totalRunsThisBall
+        }
       });
       io.to(`match:${match._id}`).emit('match:commentary', newCommentary);
       if (wagonWheel) {
@@ -882,9 +937,32 @@ exports.endMatch = async (req, res) => {
 
     await syncMatchPlayersStats(match);
 
-    // If part of tournament, update points table
     if (match.tournament) {
       await recalculateTournamentPointsTable(match.tournament);
+    }
+
+    const { triggerMatchCompletedNotification, checkTournamentCompletion } = require('../services/notificationService');
+    await triggerMatchCompletedNotification(match);
+
+    const { logAction } = require('../services/auditService');
+    await logAction(req, 'Match Completed', `Match "${match.title}" manually ended. Winner: ${match.result?.winner || 'Tie/Draw'}.`);
+
+    // Recalculate roster achievements
+    try {
+      const Team = require('../models/Team');
+      const teamA = await Team.findById(match.teamA);
+      const teamB = await Team.findById(match.teamB);
+      const playerIds = [...(teamA?.players || []), ...(teamB?.players || [])];
+      const { recalculatePlayerAchievements } = require('../services/achievementService');
+      for (const pId of playerIds) {
+        await recalculatePlayerAchievements(pId);
+      }
+    } catch (achErr) {
+      console.error('Error updating player achievements:', achErr.message);
+    }
+
+    if (match.tournament) {
+      await checkTournamentCompletion(match.tournament);
     }
 
     // Also update Team global stats
@@ -1250,7 +1328,8 @@ exports.undoLastBall = async (req, res) => {
         liveState: {
           ...match.liveState.toObject()
         },
-        innings: match.innings
+        innings: match.innings,
+        isUndo: true
       });
     }
 
@@ -1272,12 +1351,7 @@ exports.deleteMatch = async (req, res) => {
     }
 
     if (req.user.role !== 'admin') {
-      if (match.tournament) {
-        const tournament = await Tournament.findById(match.tournament);
-        if (tournament && tournament.organizer.toString() !== req.user._id.toString()) {
-          return res.status(403).json({ success: false, message: 'Not authorized to delete this match' });
-        }
-      }
+      return res.status(403).json({ success: false, message: 'Only administrators can delete matches from the system' });
     }
 
     if (match.tournament) {
@@ -1287,6 +1361,13 @@ exports.deleteMatch = async (req, res) => {
     }
 
     await Match.findByIdAndDelete(req.params.id);
+
+    if (match.status === 'Completed') {
+      await syncMatchPlayersStats(match);
+      if (match.tournament) {
+        await recalculateTournamentPointsTable(match.tournament);
+      }
+    }
 
     res.json({
       success: true,
@@ -1347,9 +1428,24 @@ exports.updateMatch = async (req, res) => {
       match.overs = overs;
       match.oversCount = overs;
     }
+    const wasCompleted = match.status === 'Completed';
     if (status) match.status = status;
+    const isCompleted = match.status === 'Completed';
 
     await match.save();
+
+    if (wasCompleted || isCompleted) {
+      await syncMatchPlayersStats(match);
+      if (match.tournament) {
+        await recalculateTournamentPointsTable(match.tournament);
+      }
+    }
+
+    const { logAction } = require('../services/auditService');
+    await logAction(req, 'Match Updated', `Updated settings/details of match "${match.title}" (ID: ${match._id}).`);
+
+    const { triggerMatchUpdatedNotification } = require('../services/notificationService');
+    await triggerMatchUpdatedNotification(match);
 
     res.json({ success: true, data: match });
   } catch (error) {

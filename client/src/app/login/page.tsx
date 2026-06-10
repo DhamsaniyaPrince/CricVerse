@@ -25,12 +25,88 @@ export default function LoginPage() {
     dispatch(clearAuthStatus());
   }, [dispatch]);
 
-  // If already logged in, redirect to dashboard
+  // If already logged in on the backend, redirect to dashboard
   useEffect(() => {
     if (isAuthenticated) {
       router.push('/dashboard');
     }
   }, [isAuthenticated, router]);
+
+  // Handle Google OAuth raw credential verification with Express backend
+  const handleGoogleCredentialResponse = async (response: any) => {
+    const idToken = response.credential;
+    if (!idToken) return;
+
+    dispatch(authStart());
+    try {
+      const res = await api.post('/auth/google-login', { idToken });
+      
+      if (res.data.success) {
+        if (res.data.exists) {
+          // User exists: login success
+          dispatch(
+            authSuccess({
+              user: res.data.data,
+              token: res.data.data.token
+            })
+          );
+          router.push('/dashboard');
+        } else {
+          // First time user: save profile details and redirect to role onboarding selection
+          localStorage.setItem('google_profile', JSON.stringify(res.data.googleProfile));
+          dispatch(clearAuthStatus());
+          router.push('/onboarding');
+        }
+      } else {
+        dispatch(authFailure(res.data.message || 'Google verification failed'));
+      }
+    } catch (err: any) {
+      console.error('Google verify error:', err);
+      dispatch(
+        authFailure(
+          err.response?.data?.message || 'Failed to authenticate with Google. Please try again.'
+        )
+      );
+    }
+  };
+
+  // Dynamically initialize and render Google Identity Services button
+  useEffect(() => {
+    let checkInterval: NodeJS.Timeout;
+
+    const initGoogleBtn = () => {
+      const google = (window as any).google;
+      if (google && google.accounts && google.accounts.id) {
+        clearInterval(checkInterval);
+        
+        google.accounts.id.initialize({
+          client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || 'dummy-client-id',
+          callback: handleGoogleCredentialResponse,
+        });
+
+        const btnContainer = document.getElementById('google-signin-button');
+        if (btnContainer) {
+          google.accounts.id.renderButton(btnContainer, {
+            theme: 'outline',
+            size: 'large',
+            width: btnContainer.clientWidth || 368,
+            text: 'signin_with',
+            shape: 'pill',
+          });
+        }
+      }
+    };
+
+    // Try immediately
+    initGoogleBtn();
+
+    // Periodically poll to ensure script is loaded and DOM container is ready
+    checkInterval = setInterval(initGoogleBtn, 300);
+
+    return () => {
+      if (checkInterval) clearInterval(checkInterval);
+    };
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -78,23 +154,6 @@ export default function LoginPage() {
     }
   };
 
-  const handleGoogleLogin = () => {
-    // Simulated Google OAuth Flow
-    dispatch(authStart());
-    setTimeout(() => {
-      // Create a mock player login
-      const mockGoogleData = {
-        _id: 'mock_google_id_123',
-        username: 'Google Cricketer',
-        email: formData.email || 'google.cricketer@cricverse.com',
-        role: 'player' as const,
-        isEmailVerified: true,
-        token: 'mocked_google_jwt_token'
-      };
-      dispatch(authSuccess({ user: mockGoogleData, token: mockGoogleData.token }));
-      router.push('/dashboard');
-    }, 1500);
-  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#0b0c10] px-4 relative overflow-hidden">
@@ -102,7 +161,7 @@ export default function LoginPage() {
       <div className="absolute top-[-20%] left-[-20%] w-[60%] h-[60%] rounded-full bg-[#66fcf1]/5 blur-[120px]"></div>
       <div className="absolute bottom-[-20%] right-[-20%] w-[60%] h-[60%] rounded-full bg-[#ff007f]/5 blur-[120px]"></div>
 
-      <div className="glass-card max-w-lg w-full p-8 md:p-10 shadow-2xl relative z-10 neon-glow-cyan border-[#66fcf1]/20">
+      <div className="glass-card max-w-md w-full p-8 md:p-10 shadow-2xl relative z-10 neon-glow-cyan border-[#66fcf1]/20">
         <div className="text-center mb-8">
           <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-[#66fcf1] to-[#1f2833] flex items-center justify-center font-bold text-[#0b0c10] text-3xl shadow-[0_0_20px_rgba(102,252,241,0.5)]">
             CV
@@ -179,26 +238,18 @@ export default function LoginPage() {
         </form>
 
         {/* Separator line */}
-        <div className="relative my-8 text-center">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-[#66fcf1]/10"></div>
-          </div>
-          <span className="relative bg-[#0d1117] px-4 text-xs font-bold text-gray-500 uppercase tracking-widest">
+        <div className="flex items-center my-6">
+          <div className="flex-grow border-t border-[#66fcf1]/10"></div>
+          <span className="px-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest whitespace-nowrap">
             OR SIGN IN WITH
           </span>
+          <div className="flex-grow border-t border-[#66fcf1]/10"></div>
         </div>
 
         {/* Social auth */}
-        <button
-          onClick={handleGoogleLogin}
-          disabled={isLoading}
-          className="w-full py-3 rounded-lg border border-gray-700 hover:border-white text-gray-300 hover:text-white font-semibold transition duration-300 flex items-center justify-center space-x-2 bg-[#1f2833]/10"
-        >
-          <svg className="w-5 h-5 text-red-400" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12.24 10.285V13.4h6.887c-.275 1.565-1.88 4.604-6.887 4.604-4.33 0-7.866-3.577-7.866-8s3.536-8 7.866-8c2.46 0 4.105 1.025 5.047 1.926l2.427-2.334C17.955 2.192 15.34 1 12.24 1 6.033 1 12.24s5.033 11.24 11.24 11.24c6.478 0 10.793-4.537 10.793-10.986 0-.746-.08-1.32-.176-1.886H12.24z"/>
-          </svg>
-          <span>SIGN IN WITH GOOGLE</span>
-        </button>
+        <div className="w-full flex justify-center">
+          <div id="google-signin-button" className="w-full min-h-[44px] flex justify-center"></div>
+        </div>
 
         {/* Redirect toggle */}
         <p className="mt-8 text-center text-sm text-gray-500">

@@ -19,6 +19,12 @@ const initSocket = (server) => {
       console.log(`Socket ${socket.id} joined room: match:${matchId}`);
     });
 
+    // Join user room for notifications
+    socket.on('join_user_room', (userId) => {
+      socket.join(`user:${userId}`);
+      console.log(`Socket ${socket.id} joined user room: user:${userId}`);
+    });
+
     // Leave match room
     socket.on('leave_match_room', (matchId) => {
       socket.leave(`match:${matchId}`);

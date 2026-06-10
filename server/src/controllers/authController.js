@@ -38,6 +38,10 @@ exports.register = async (req, res) => {
     });
 
     if (user) {
+      req.user = user;
+      const { logAction } = require('../services/auditService');
+      await logAction(req, 'User Registered', `User "${user.username}" registered with role "${user.role}".`);
+
       res.status(201).json({
         success: true,
         message: 'Registration successful! Verification email generated.',
@@ -72,6 +76,14 @@ exports.login = async (req, res) => {
       if (user.isBanned) {
         return res.status(403).json({ success: false, message: 'Your account has been suspended by an administrator.' });
       }
+
+      req.user = user;
+      const { logAction } = require('../services/auditService');
+      await logAction(req, 'User Login', `User "${user.username}" logged in.`);
+
+      user.lastLogin = Date.now();
+      await user.save();
+
       res.json({
         success: true,
         data: {
@@ -297,4 +309,214 @@ exports.updatePassword = async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 };
+
+// Helper function to verify Google ID token via Google Tokeninfo API
+const verifyGoogleToken = async (idToken) => {
+  try {
+    const response = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${idToken}`);
+    if (!response.ok) {
+      console.error('Google token verification response failed:', response.status);
+      return null;
+    }
+    const data = await response.json();
+    
+    // Safety check: Validate client ID audience matches Google ID configured
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    if (clientId && data.aud !== clientId && clientId !== 'dummy_google_client_id') {
+      console.error('Audience mismatch. Token aud:', data.aud, 'Configured Client ID:', clientId);
+      return null;
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Error verifying Google Token:', error);
+    return null;
+  }
+};
+
+// @desc    Google Sign In / Login
+// @route   POST /api/auth/google-login
+// @access  Public
+exports.googleLogin = async (req, res) => {
+  const { idToken } = req.body;
+
+  if (!idToken) {
+    return res.status(400).json({ success: false, message: 'Google ID Token is required.' });
+  }
+
+  try {
+    // Verify Google ID Token
+    const payload = await verifyGoogleToken(idToken);
+    if (!payload) {
+      return res.status(401).json({ success: false, message: 'Invalid or expired Google token.' });
+    }
+
+    const { sub: googleId, email, name, picture: profileImage } = payload;
+
+    // Check if user already exists with this googleId
+    let user = await User.findOne({ googleId });
+
+    // Link account if email matches but googleId isn't linked yet (duplication prevention)
+    if (!user && email) {
+      user = await User.findOne({ email });
+      if (user) {
+        user.googleId = googleId;
+        user.authProvider = 'google';
+        if (!user.name) user.name = name;
+        if (!user.profileImage) user.profileImage = profileImage;
+        if (!user.avatar) user.avatar = profileImage;
+        user.lastLogin = Date.now();
+        await user.save();
+      }
+    }
+
+    if (user) {
+      if (user.isBanned) {
+        return res.status(403).json({ success: false, message: 'Your account has been suspended by an administrator.' });
+      }
+
+      user.lastLogin = Date.now();
+      await user.save();
+
+      res.json({
+        success: true,
+        exists: true,
+        data: {
+          _id: user._id,
+          username: user.username,
+          name: user.name || user.username,
+          email: user.email,
+          role: user.role,
+          avatar: user.avatar || user.profileImage,
+          authProvider: user.authProvider,
+          isEmailVerified: user.isEmailVerified,
+          token: generateToken(user._id)
+        }
+      });
+    } else {
+      // First-time user: return details so frontend client can redirect to onboarding/role selection
+      res.json({
+        success: true,
+        exists: false,
+        googleProfile: {
+          name,
+          email,
+          googleId,
+          avatar: profileImage
+        }
+      });
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// @desc    Google Onboarding / Registration
+// @route   POST /api/auth/google-register
+// @access  Public
+exports.googleRegister = async (req, res) => {
+  const { name, email, googleId, avatar, role } = req.body;
+
+  if (!email || !googleId || !role) {
+    return res.status(400).json({ success: false, message: 'Missing required registration details.' });
+  }
+
+  if (!['player', 'captain', 'organizer', 'admin'].includes(role)) {
+    return res.status(400).json({ success: false, message: 'Invalid role selection. Must be player, captain, organizer, or admin.' });
+  }
+
+  try {
+    // Confirm user doesn't already exist to prevent duplicates
+    let existingUser = await User.findOne({ email });
+    if (existingUser) {
+      existingUser.googleId = googleId;
+      existingUser.authProvider = 'google';
+      if (name) existingUser.name = name;
+      if (avatar) {
+        existingUser.profileImage = avatar;
+        existingUser.avatar = avatar;
+      }
+      existingUser.role = role;
+      existingUser.lastLogin = Date.now();
+      await existingUser.save();
+
+      return res.status(200).json({
+        success: true,
+        message: 'Account linked and onboarded successfully!',
+        data: {
+          _id: existingUser._id,
+          username: existingUser.username,
+          name: existingUser.name || existingUser.username,
+          email: existingUser.email,
+          role: existingUser.role,
+          avatar: existingUser.avatar,
+          authProvider: existingUser.authProvider,
+          isEmailVerified: existingUser.isEmailVerified,
+          token: generateToken(existingUser._id)
+        }
+      });
+    }
+
+    // Generate a unique clean username
+    let baseUsername = email.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '');
+    if (baseUsername.length < 3) {
+      baseUsername = name ? name.replace(/\s+/g, '').toLowerCase() : 'cricketer';
+    }
+    
+    let username = baseUsername;
+    let count = 1;
+    while (await User.findOne({ username })) {
+      username = `${baseUsername}${count}`;
+      count++;
+    }
+
+    // Create User record
+    const user = await User.create({
+      username,
+      name: name || username,
+      email,
+      googleId,
+      authProvider: 'google',
+      profileImage: avatar || '',
+      avatar: avatar || '',
+      role,
+      isEmailVerified: true,
+      lastLogin: Date.now()
+    });
+
+    // If role is player, automatically instantiate a Player stats profile record
+    if (role === 'player') {
+      const Player = require('../models/Player');
+      let player = await Player.findOne({ name: { $regex: new RegExp(`^${username}$`, 'i') } });
+      if (!player) {
+        await Player.create({
+          name: name || username,
+          avatar: avatar || '',
+          role: 'All-Rounder',
+          battingStyle: 'Right-hand bat',
+          bowlingStyle: 'Right-arm medium'
+        });
+      }
+    }
+
+    res.status(201).json({
+      success: true,
+      message: 'Google registration completed!',
+      data: {
+        _id: user._id,
+        username: user.username,
+        name: user.name || user.username,
+        email: user.email,
+        role: user.role,
+        avatar: user.avatar,
+        authProvider: user.authProvider,
+        isEmailVerified: user.isEmailVerified,
+        token: generateToken(user._id)
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
 

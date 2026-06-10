@@ -57,6 +57,14 @@ export default function PlayersPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
+  
+  // Team filter states
+  const [teams, setTeams] = useState<any[]>([]);
+  const [teamFilter, setTeamFilter] = useState('');
+
+  // Autocomplete suggestion states
+  const [suggestions, setSuggestions] = useState<Player[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   // Create Player States
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -73,7 +81,7 @@ export default function PlayersPage() {
   const fetchPlayers = async () => {
     setIsLoading(true);
     try {
-      const response = await api.get(`/players?search=${search}&role=${roleFilter}`);
+      const response = await api.get(`/players?search=${search}&role=${roleFilter}&teamId=${teamFilter}`);
       if (response.data.success) {
         setPlayers(response.data.data);
       }
@@ -84,9 +92,41 @@ export default function PlayersPage() {
     }
   };
 
+  // Fetch teams list for dropdown filter
   useEffect(() => {
-    fetchPlayers();
-  }, [roleFilter]); // Refetch when role filters change
+    const fetchTeams = async () => {
+      try {
+        const response = await api.get('/teams');
+        if (response.data.success) {
+          setTeams(response.data.data);
+        }
+      } catch (err) {
+        console.error('Error fetching teams:', err);
+      }
+    };
+    fetchTeams();
+  }, []);
+
+  // Real-time letter-wise search suggestion updating
+  useEffect(() => {
+    if (!search.trim()) {
+      setSuggestions([]);
+      return;
+    }
+    const filtered = players.filter(p =>
+      p.name.toLowerCase().includes(search.toLowerCase())
+    ).slice(0, 5);
+    setSuggestions(filtered);
+  }, [search, players]);
+
+  // Debounced search-as-you-type + filter updates trigger
+  useEffect(() => {
+    const delayDebounce = setTimeout(() => {
+      fetchPlayers();
+    }, 250);
+
+    return () => clearTimeout(delayDebounce);
+  }, [search, roleFilter, teamFilter]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -143,10 +183,10 @@ export default function PlayersPage() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#0b0c10]">
+    <div className="flex flex-col h-screen bg-[#0b0c10] overflow-hidden">
       <Navbar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
 
-      <div className="flex flex-1">
+      <div className="flex flex-1 overflow-hidden">
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
         <main className="flex-1 px-4 md:px-8 py-8 overflow-y-auto max-w-7xl mx-auto w-full">
@@ -159,17 +199,52 @@ export default function PlayersPage() {
 
             {/* Actions & Filters */}
             <div className="flex flex-wrap items-center gap-3">
-              <form onSubmit={handleSearchSubmit} className="flex items-center space-x-3 w-full md:w-auto">
+              <form onSubmit={handleSearchSubmit} className="flex items-center space-x-3 w-full md:w-auto relative">
                 <div className="relative flex-1 md:flex-none">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-gray-500" />
                   <input
                     type="text"
                     placeholder="Search player name..."
                     value={search}
-                    onChange={(e) => setSearch(e.target.value)}
+                    onChange={(e) => {
+                      setSearch(e.target.value);
+                      setShowSuggestions(true);
+                    }}
+                    onFocus={() => setShowSuggestions(true)}
+                    onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                     className="bg-[#1f2833]/30 border border-[#66fcf1]/20 py-2 pl-10 pr-4 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#66fcf1]/50 w-full"
                   />
+                  
+                  {/* Autocomplete suggestions dropdown */}
+                  {showSuggestions && suggestions.length > 0 && (
+                    <div className="absolute left-0 right-0 mt-1 bg-[#0b0c10] border border-[#66fcf1]/30 rounded-xl shadow-2xl z-50 overflow-hidden backdrop-blur-md">
+                      {suggestions.map((p) => (
+                        <div
+                          key={p._id}
+                          onClick={() => {
+                            setSearch(p.name);
+                            setShowSuggestions(false);
+                          }}
+                          className="px-4 py-2.5 hover:bg-[#66fcf1]/10 text-xs text-white font-medium cursor-pointer transition flex items-center justify-between border-b border-white/5 last:border-b-0"
+                        >
+                          <span>{p.name}</span>
+                          <span className="text-[9px] text-[#66fcf1] font-bold uppercase">{p.role}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
+
+                <select
+                  value={teamFilter}
+                  onChange={(e) => setTeamFilter(e.target.value)}
+                  className="bg-[#1f2833]/30 border border-[#66fcf1]/20 py-2 px-3 rounded-xl text-xs text-white focus:outline-none"
+                >
+                  <option value="" className="bg-[#0b0c10]">All Teams</option>
+                  {teams.map((t) => (
+                    <option key={t._id} value={t._id} className="bg-[#0b0c10]">{t.name}</option>
+                  ))}
+                </select>
 
                 <select
                   value={roleFilter}

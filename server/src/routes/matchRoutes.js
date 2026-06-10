@@ -27,7 +27,7 @@ router.post('/seed', seedMatches);
 router.route('/:id')
   .get(getMatchById)
   .put(protect, authorize('organizer', 'admin'), updateMatch)
-  .delete(protect, authorize('organizer', 'admin'), deleteMatch);
+  .delete(protect, authorize('admin'), deleteMatch);
 
 router.route('/:id/setup-ready')
   .put(protect, authorize('organizer', 'admin'), setupMatchReady);

@@ -2,6 +2,7 @@ const User = require('../models/User');
 const Tournament = require('../models/Tournament');
 const Match = require('../models/Match');
 const Report = require('../models/Report');
+const { logAction } = require('../services/auditService');
 
 // @desc    Get dashboard summary statistics
 // @route   GET /api/admin/overview
@@ -82,6 +83,8 @@ exports.updateUserBanStatus = async (req, res) => {
     user.isBanned = !!isBanned;
     await user.save();
 
+    await logAction(req, 'User Ban Status Updated', `${user.isBanned ? 'Suspended' : 'Re-activated'} user "${user.username}" (ID: ${user._id}).`);
+
     res.json({
       success: true,
       message: `User account has been successfully ${user.isBanned ? 'suspended' : 're-activated'}.`,
@@ -119,8 +122,11 @@ exports.updateUserRole = async (req, res) => {
       return res.status(403).json({ success: false, message: 'You cannot change another admin\'s role' });
     }
 
+    const oldRole = user.role;
     user.role = role;
     await user.save();
+
+    await logAction(req, 'User Role Updated', `Updated role of user "${user.username}" (ID: ${user._id}) from "${oldRole}" to "${role}".`);
 
     res.json({
       success: true,
@@ -162,6 +168,8 @@ exports.approveTournament = async (req, res) => {
 
     tournament.isApproved = true;
     await tournament.save();
+
+    await logAction(req, 'Tournament Approved', `Approved tournament "${tournament.name}" (ID: ${tournament._id}).`);
 
     res.json({
       success: true,
@@ -223,6 +231,8 @@ exports.resolveReport = async (req, res) => {
     report.status = status;
     await report.save();
 
+    await logAction(req, 'Report Resolved', `Set report status (ID: ${report._id}) to "${status}".`);
+
     res.json({
       success: true,
       message: `Report status updated to '${status}'.`,
@@ -252,10 +262,25 @@ exports.deleteMatch = async (req, res) => {
 
     await Match.findByIdAndDelete(req.params.id);
 
+    await logAction(req, 'Match Deleted', `Deleted match "${match.title}" (ID: ${match._id}).`);
+
     res.json({
       success: true,
       message: 'Match was successfully deleted.'
     });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// @desc    Get all audit logs
+// @route   GET /api/admin/audit-logs
+// @access  Private/Admin
+exports.getAuditLogs = async (req, res) => {
+  try {
+    const AuditLog = require('../models/AuditLog');
+    const logs = await AuditLog.find().sort({ createdAt: -1 }).limit(100);
+    res.json({ success: true, count: logs.length, data: logs });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }

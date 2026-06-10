@@ -2,6 +2,7 @@ const Tournament = require('../models/Tournament');
 const Match = require('../models/Match');
 const Team = require('../models/Team');
 const Player = require('../models/Player');
+const { logAction } = require('../services/auditService');
 
 // @desc    Create a new tournament
 // @route   POST /api/tournaments
@@ -12,6 +13,9 @@ exports.createTournament = async (req, res) => {
       req.body.organizer = req.user._id;
     }
     const tournament = await Tournament.create(req.body);
+
+    await logAction(req, 'Tournament Created', `Created tournament "${tournament.name}" (ID: ${tournament._id}).`);
+
     res.status(201).json({ success: true, data: tournament });
   } catch (error) {
     res.status(400).json({ success: false, error: error.message });
@@ -180,6 +184,12 @@ exports.generateFixtures = async (req, res) => {
     tournament.status = 'Live';
     await tournament.save();
 
+    const { triggerTournamentStartedNotification } = require('../services/notificationService');
+    await triggerTournamentStartedNotification(tournament);
+
+    const { logAction } = require('../services/auditService');
+    await logAction(req, 'Tournament Started', `Tournament "${tournament.name}" status set to Live.`);
+
     res.json({ success: true, message: 'Fixtures generated successfully!', data: tournament });
   } catch (error) {
     console.error(error);
@@ -293,10 +303,25 @@ exports.updateTournament = async (req, res) => {
       return res.status(403).json({ success: false, message: 'Not authorized to update this tournament' });
     }
 
+    const oldStatus = tournament.status;
+
     const updatedTournament = await Tournament.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true
     });
+
+    if (req.body.status && req.body.status !== oldStatus) {
+      const { triggerTournamentStartedNotification, triggerTournamentEndedNotification } = require('../services/notificationService');
+      const { logAction } = require('../services/auditService');
+      
+      if (req.body.status === 'Live') {
+        await triggerTournamentStartedNotification(updatedTournament);
+        await logAction(req, 'Tournament Started', `Tournament "${updatedTournament.name}" status updated to Live.`);
+      } else if (req.body.status === 'Completed') {
+        await triggerTournamentEndedNotification(updatedTournament);
+        await logAction(req, 'Tournament Completed', `Tournament "${updatedTournament.name}" status updated to Completed.`);
+      }
+    }
 
     res.json({ success: true, data: updatedTournament });
   } catch (error) {
@@ -484,6 +509,14 @@ exports.respondToRegistration = async (req, res) => {
         });
 
         await tournament.save();
+
+        const { triggerTeamApprovedNotification } = require('../services/notificationService');
+        await triggerTeamApprovedNotification(registration);
+
+        const { logAction } = require('../services/auditService');
+        const Team = require('../models/Team');
+        const team = await Team.findById(registration.team);
+        await logAction(req, 'Team Approved', `Approved team "${team?.name || 'Unknown'}" for tournament "${tournament.name}".`);
       }
     }
 

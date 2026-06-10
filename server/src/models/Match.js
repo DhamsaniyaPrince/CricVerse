@@ -154,6 +154,92 @@ const matchSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Player'
   },
+  awards: {
+    playerOfMatch: [{
+      player: { type: mongoose.Schema.Types.ObjectId, ref: 'Player' },
+      name: String,
+      teamName: String,
+      runs: Number,
+      wickets: Number,
+      catches: Number,
+      score: Number
+    }],
+    highestRunScorer: [{
+      player: { type: mongoose.Schema.Types.ObjectId, ref: 'Player' },
+      name: String,
+      teamName: String,
+      runs: Number,
+      balls: Number
+    }],
+    bestBowler: [{
+      player: { type: mongoose.Schema.Types.ObjectId, ref: 'Player' },
+      name: String,
+      teamName: String,
+      wickets: Number,
+      runs: Number,
+      overs: Number
+    }],
+    bestFielder: [{
+      player: { type: mongoose.Schema.Types.ObjectId, ref: 'Player' },
+      name: String,
+      teamName: String,
+      catches: Number,
+      runOuts: Number,
+      stumpings: Number
+    }],
+    fastestScorer: [{
+      player: { type: mongoose.Schema.Types.ObjectId, ref: 'Player' },
+      name: String,
+      teamName: String,
+      strikeRate: Number,
+      runs: Number,
+      balls: Number
+    }],
+    mostSixes: [{
+      player: { type: mongoose.Schema.Types.ObjectId, ref: 'Player' },
+      name: String,
+      teamName: String,
+      sixes: Number
+    }],
+    mostFours: [{
+      player: { type: mongoose.Schema.Types.ObjectId, ref: 'Player' },
+      name: String,
+      teamName: String,
+      fours: Number
+    }],
+    bestPartnership: {
+      batsman1: String,
+      batsman2: String,
+      runs: Number
+    },
+    bestAllRounder: [{
+      player: { type: mongoose.Schema.Types.ObjectId, ref: 'Player' },
+      name: String,
+      teamName: String,
+      runs: Number,
+      wickets: Number
+    }],
+    gameChanger: [{
+      player: { type: mongoose.Schema.Types.ObjectId, ref: 'Player' },
+      name: String,
+      teamName: String,
+      score: Number
+    }],
+    economyKing: [{
+      player: { type: mongoose.Schema.Types.ObjectId, ref: 'Player' },
+      name: String,
+      teamName: String,
+      economy: Number,
+      runs: Number,
+      overs: Number
+    }],
+    emergingPlayer: [{
+      player: { type: mongoose.Schema.Types.ObjectId, ref: 'Player' },
+      name: String,
+      teamName: String,
+      score: Number
+    }]
+  },
   createdAt: {
     type: Date,
     default: Date.now

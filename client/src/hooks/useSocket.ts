@@ -5,9 +5,15 @@ import { updateLiveScore, appendCommentary, appendWagonPoint } from '../store/sl
 
 const SOCKET_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
-export const useSocket = (matchId?: string) => {
+export const useSocket = (matchId?: string, onBallPlayed?: (data: any) => void) => {
   const dispatch = useDispatch();
   const socketRef = useRef<Socket | null>(null);
+  const callbackRef = useRef(onBallPlayed);
+
+  // Keep callback ref updated to prevent triggering useEffect on callback change
+  useEffect(() => {
+    callbackRef.current = onBallPlayed;
+  }, [onBallPlayed]);
 
   useEffect(() => {
     if (!matchId) return;
@@ -29,6 +35,9 @@ export const useSocket = (matchId?: string) => {
     socket.on('match:update', (data) => {
       console.log('Socket match score update received:', data);
       dispatch(updateLiveScore(data));
+      if (callbackRef.current) {
+        callbackRef.current(data);
+      }
     });
 
     // Real-time commentary append

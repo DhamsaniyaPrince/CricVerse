@@ -15,7 +15,7 @@ const {
   getManagedTeams,
   assignMemberRole
 } = require('../controllers/teamController');
-const { protect } = require('../middleware/auth');
+const { protect, authorize } = require('../middleware/auth');
 
 router.route('/')
   .post(protect, createTeam)
@@ -28,7 +28,7 @@ router.get('/managed', protect, getManagedTeams);
 router.route('/:id')
   .get(getTeamById)
   .put(protect, updateTeam)
-  .delete(protect, deleteTeam);
+  .delete(protect, authorize('admin'), deleteTeam);
 
 router.post('/:id/invite', protect, invitePlayer);
 router.post('/:id/invitations/respond', protect, respondToInvitation);

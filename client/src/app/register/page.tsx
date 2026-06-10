@@ -26,11 +26,88 @@ export default function RegisterPage() {
     dispatch(clearAuthStatus());
   }, [dispatch]);
 
+  // If already logged in on the backend, redirect to dashboard
   useEffect(() => {
     if (isAuthenticated) {
       router.push('/dashboard');
     }
   }, [isAuthenticated, router]);
+
+  // Handle Google OAuth raw credential verification with Express backend
+  const handleGoogleCredentialResponse = async (response: any) => {
+    const idToken = response.credential;
+    if (!idToken) return;
+
+    dispatch(authStart());
+    try {
+      const res = await api.post('/auth/google-login', { idToken });
+      
+      if (res.data.success) {
+        if (res.data.exists) {
+          // User exists: login success
+          dispatch(
+            authSuccess({
+              user: res.data.data,
+              token: res.data.data.token
+            })
+          );
+          router.push('/dashboard');
+        } else {
+          // First time user: save profile details and redirect to role onboarding selection
+          localStorage.setItem('google_profile', JSON.stringify(res.data.googleProfile));
+          dispatch(clearAuthStatus());
+          router.push('/onboarding');
+        }
+      } else {
+        dispatch(authFailure(res.data.message || 'Google verification failed'));
+      }
+    } catch (err: any) {
+      console.error('Google verify error:', err);
+      dispatch(
+        authFailure(
+          err.response?.data?.message || 'Failed to authenticate with Google. Please try again.'
+        )
+      );
+    }
+  };
+
+  // Dynamically initialize and render Google Identity Services button
+  useEffect(() => {
+    let checkInterval: NodeJS.Timeout;
+
+    const initGoogleBtn = () => {
+      const google = (window as any).google;
+      if (google && google.accounts && google.accounts.id) {
+        clearInterval(checkInterval);
+        
+        google.accounts.id.initialize({
+          client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || 'dummy-client-id',
+          callback: handleGoogleCredentialResponse,
+        });
+
+        const btnContainer = document.getElementById('google-signup-button');
+        if (btnContainer) {
+          google.accounts.id.renderButton(btnContainer, {
+            theme: 'outline',
+            size: 'large',
+            width: btnContainer.clientWidth || 368,
+            text: 'signup_with',
+            shape: 'pill',
+          });
+        }
+      }
+    };
+
+    // Try immediately
+    initGoogleBtn();
+
+    // Periodically poll to ensure script is loaded and DOM container is ready
+    checkInterval = setInterval(initGoogleBtn, 300);
+
+    return () => {
+      if (checkInterval) clearInterval(checkInterval);
+    };
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -101,7 +178,7 @@ export default function RegisterPage() {
       <div className="absolute top-[-20%] right-[-20%] w-[60%] h-[60%] rounded-full bg-[#66fcf1]/5 blur-[120px]"></div>
       <div className="absolute bottom-[-20%] left-[-20%] w-[60%] h-[60%] rounded-full bg-[#ff007f]/5 blur-[120px]"></div>
 
-      <div className="glass-card max-w-lg w-full p-8 md:p-10 shadow-2xl relative z-10 neon-glow-cyan border-[#66fcf1]/20">
+      <div className="glass-card max-w-md w-full p-8 md:p-10 shadow-2xl relative z-10 neon-glow-cyan border-[#66fcf1]/20">
         <div className="text-center mb-8">
           <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-[#66fcf1] to-[#1f2833] flex items-center justify-center font-bold text-[#0b0c10] text-3xl shadow-[0_0_20px_rgba(102,252,241,0.5)]">
             CV
@@ -215,7 +292,22 @@ export default function RegisterPage() {
           </button>
         </form>
 
+        {/* Separator line */}
+        <div className="flex items-center my-6">
+          <div className="flex-grow border-t border-[#66fcf1]/10"></div>
+          <span className="px-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest whitespace-nowrap">
+            OR CONTINUE WITH
+          </span>
+          <div className="flex-grow border-t border-[#66fcf1]/10"></div>
+        </div>
+
+        {/* Social auth */}
+        <div className="w-full flex justify-center">
+          <div id="google-signup-button" className="w-full min-h-[44px] flex justify-center"></div>
+        </div>
+
         {/* Redirect toggle */}
+
         <p className="mt-8 text-center text-sm text-gray-500">
           ALREADY HAVE AN ACCOUNT?{' '}
           <Link href="/login" className="font-bold text-[#66fcf1] hover:underline">

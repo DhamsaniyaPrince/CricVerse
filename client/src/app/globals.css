@@ -259,3 +259,102 @@ div {
   background: rgba(8, 145, 178, 0.6);
 }
 
+/* Touch-friendly interactive elements */
+button, 
+a.button, 
+input[type="button"], 
+input[type="submit"], 
+input[type="text"], 
+input[type="email"], 
+input[type="password"], 
+input[type="number"], 
+select, 
+textarea {
+  min-height: 44px;
+}
+
+/* Accessible focus outlines for keyboard navigation */
+*:focus-visible {
+  outline: 2px solid var(--neon-cyan);
+  outline-offset: 2px;
+}
+
+/* User preference for reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* --- FUTURISTIC SPORTS-TECH ANALYTICS HUD STYLES --- */
+
+/* Cyberpunk Digital Grid Overlay */
+.cyber-grid {
+  background-image: 
+    linear-gradient(rgba(102, 252, 241, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(102, 252, 241, 0.02) 1px, transparent 1px);
+  background-size: 40px 40px;
+  background-position: center;
+}
+
+/* Glowing Neon Utilities */
+.neon-shadow-cyan {
+  box-shadow: 0 0 25px rgba(102, 252, 241, 0.25);
+}
+
+.neon-shadow-magenta {
+  box-shadow: 0 0 25px rgba(255, 0, 127, 0.25);
+}
+
+.neon-border-cyan {
+  border: 1px solid rgba(102, 252, 241, 0.4);
+}
+
+.neon-border-magenta {
+  border: 1px solid rgba(255, 0, 127, 0.4);
+}
+
+/* Neumorphic Card Accents */
+.neu-card {
+  background: rgba(15, 19, 26, 0.7);
+  box-shadow: 6px 6px 16px rgba(0, 0, 0, 0.4), -6px -6px 16px rgba(255, 255, 255, 0.02);
+  border-radius: 1rem;
+}
+
+/* Floating Cyber Particles */
+@keyframes float-particle-1 {
+  0% { transform: translateY(0) translateX(0) scale(1); opacity: 0.1; }
+  50% { transform: translateY(-120px) translateX(25px) scale(1.3); opacity: 0.35; }
+  100% { transform: translateY(-240px) translateX(-15px) scale(1); opacity: 0; }
+}
+
+@keyframes float-particle-2 {
+  0% { transform: translateY(0) translateX(0) scale(1.1); opacity: 0.08; }
+  50% { transform: translateY(-160px) translateX(-35px) scale(0.9); opacity: 0.28; }
+  100% { transform: translateY(-320px) translateX(20px) scale(1.1); opacity: 0; }
+}
+
+.cyber-particle-slow {
+  animation: float-particle-1 12s infinite linear;
+}
+
+.cyber-particle-fast {
+  animation: float-particle-2 8s infinite linear;
+}
+
+/* Futuristic Progress Level bar */
+.progress-core-glow {
+  box-shadow: 0 0 8px rgba(102, 252, 241, 0.5);
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Premium Typography digital look */
+.font-digital {
+  font-family: 'Courier New', Courier, monospace;
+  letter-spacing: 0.05em;
+}
+
+

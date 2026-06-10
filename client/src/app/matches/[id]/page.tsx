@@ -12,9 +12,13 @@ import {
 import Navbar from '@/components/layout/Navbar';
 import Sidebar from '@/components/layout/Sidebar';
 import WagonWheel from '@/components/match/WagonWheel';
+import MatchAwards from '@/components/match/MatchAwards';
 import { useSocket } from '@/hooks/useSocket';
 import api from '@/utils/api';
-import { Activity, Radio, List, BookOpen, AlertCircle, RefreshCw, Star, Trophy, Users, Compass, ChevronRight } from 'lucide-react';
+import { Activity, Radio, List, BookOpen, AlertCircle, RefreshCw, Star, Trophy, Users, Compass, ChevronRight, Volume2, VolumeX } from 'lucide-react';
+import AnimateScore from '@/components/match/AnimateScore';
+import LiveScoreAnimations, { ScorerEvent } from '@/components/match/LiveScoreAnimations';
+import { audioService } from '@/utils/audioService';
 
 const formatPlayerName = (name?: string) => {
   if (!name) return 'Player';
@@ -40,12 +44,38 @@ export default function MatchDetailPage() {
   const matchId = params?.id as string;
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'live' | 'scorecard'>('live');
-
-  // Activate live socket connections
-  useSocket(matchId);
+  const [activeTab, setActiveTab] = useState<'live' | 'scorecard' | 'awards'>('live');
+  const [currentBallEvent, setCurrentBallEvent] = useState<ScorerEvent | null>(null);
+  const [isAudioMuted, setIsAudioMuted] = useState(audioService.getMuteState());
 
   const { currentMatch, isLoading, error } = useSelector((state: RootState) => state.match);
+
+  // Handle scoring events from socket to trigger animations
+  const handleBallPlayed = (data: any) => {
+    if (data.isUndo) {
+      setCurrentBallEvent(null);
+      return;
+    }
+    if (data.lastBall) {
+      const allPlayers = [
+        ...(currentMatch?.playingXIA || []),
+        ...(currentMatch?.playingXIB || [])
+      ];
+      
+      const striker = allPlayers.find(p => p._id === data.lastBall.strikerId);
+      const batsmanOut = allPlayers.find(p => p._id === data.lastBall.batsmanOutId);
+      
+      setCurrentBallEvent({
+        id: Math.random().toString(36).substring(2, 9),
+        ...data.lastBall,
+        strikerName: striker ? formatPlayerName(striker.name) : 'Batsman',
+        batsmanOutName: batsmanOut ? formatPlayerName(batsmanOut.name) : 'Batsman'
+      });
+    }
+  };
+
+  // Activate live socket connections
+  useSocket(matchId, handleBallPlayed);
 
   const fetchMatchDetails = async () => {
     dispatch(fetchCurrentMatchStart());
@@ -213,7 +243,7 @@ export default function MatchDetailPage() {
       runs: batsmanCard.runs,
       balls: batsmanCard.balls,
       scoreAtDismissal: `${scoreAtDismissalRuns}/${scoreAtDismissalWickets}`,
-      over: `${wicketComm.overNum}.${wicketComm.ballNum}`
+      over: wicketComm.ballNum === 6 ? `${wicketComm.overNum + 1}.0` : `${wicketComm.overNum}.${wicketComm.ballNum}`
     };
   };
 
@@ -261,28 +291,46 @@ export default function MatchDetailPage() {
   const recentOversList = getRecentOvers();
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#0b0c10]">
+    <div className="flex flex-col h-screen bg-[#0b0c10] overflow-hidden">
       <Navbar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
-      <div className="flex flex-1">
+      <div className="flex flex-1 overflow-hidden">
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
         <main className="flex-1 px-4 md:px-8 py-8 overflow-y-auto max-w-7xl mx-auto w-full">
           {/* REDESIGNED HEADER: Match Situation Banner */}
           <div className="mb-6 p-4 rounded-xl border border-[#66fcf1]/25 bg-[#66fcf1]/5 flex flex-col md:flex-row md:items-center justify-between gap-4 select-none">
-            <div className="flex items-center space-x-2.5">
-              <Radio className="w-5 h-5 text-red-500 animate-pulse" />
-              <span className="text-xs uppercase font-extrabold tracking-widest text-gray-400">Match Status:</span>
-              <span className={`text-xs px-2.5 py-0.5 rounded-full font-black uppercase tracking-wider ${
-                status === 'Live' ? 'bg-[#39ff14]/10 text-[#39ff14]' : status === 'Completed' ? 'bg-[#66fcf1]/10 text-[#66fcf1]' : 'bg-yellow-500/10 text-yellow-400'
-              }`}>
-                {status}
-              </span>
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex items-center space-x-2.5">
+                <Radio className="w-5 h-5 text-red-500 animate-pulse" />
+                <span className="text-xs uppercase font-extrabold tracking-widest text-gray-400">Match Status:</span>
+                <span className={`text-xs px-2.5 py-0.5 rounded-full font-black uppercase tracking-wider ${
+                  status === 'Live' ? 'bg-[#39ff14]/10 text-[#39ff14]' : status === 'Completed' ? 'bg-[#66fcf1]/10 text-[#66fcf1]' : 'bg-yellow-500/10 text-yellow-400'
+                }`}>
+                  {status}
+                </span>
+              </div>
+
+              {/* Sound Settings Control */}
+              <button
+                onClick={() => {
+                  const newState = !isAudioMuted;
+                  audioService.setMuteState(newState);
+                  setIsAudioMuted(newState);
+                }}
+                className="flex items-center justify-center min-h-[36px] px-3 py-1 rounded-lg border border-white/10 hover:border-[#66fcf1]/30 hover:bg-[#66fcf1]/5 transition text-gray-400 hover:text-[#66fcf1] focus:outline-none cursor-pointer"
+                title={isAudioMuted ? "Unmute Sounds" : "Mute Sounds"}
+              >
+                {isAudioMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4 text-[#39ff14]" />}
+                <span className="text-[10px] uppercase font-bold tracking-widest ml-1.5">
+                  {isAudioMuted ? "Sound Off" : "Sound On"}
+                </span>
+              </button>
             </div>
 
             <h2 className="text-sm font-bold text-white uppercase tracking-wider font-mono">
               {status === 'Completed' && result ? (
                 result.winner ? (
-                  `${formatPlayerName(typeof result.winner === 'object' ? result.winner.name : (result.winner === teamA._id ? teamA.name : teamB.name))} ${result.margin}`
+                  `${formatPlayerName(typeof result.winner === 'object' ? result.winner.name : (result.winner === teamA._id ? teamA.name : teamB.name))} ${result.margin?.toLowerCase().startsWith('won') ? result.margin : 'won ' + result.margin}`
                 ) : (
                   result.margin || 'Match Tied'
                 )
@@ -309,11 +357,13 @@ export default function MatchDetailPage() {
                     <h1 className="text-3xl md:text-4xl font-black text-white tracking-wide uppercase">
                       {formatPlayerName(battingTeamName)}
                     </h1>
-                    <p className="text-3xl md:text-4xl font-black text-[#66fcf1] font-mono tracking-tight">
-                      {currentInningsRuns}
-                      <span className="text-white">/</span>
-                      {currentInningsWickets}
-                    </p>
+                    <AnimateScore
+                      runs={currentInningsRuns}
+                      wickets={currentInningsWickets}
+                      runsClassName="text-[#66fcf1]"
+                      wicketsClassName="text-white"
+                      className="text-3xl md:text-4xl"
+                    />
                   </div>
                 </div>
 
@@ -437,6 +487,19 @@ export default function MatchDetailPage() {
               <List className="w-4 h-4" />
               <span>Full Scorecard</span>
             </button>
+            {status === 'Completed' && (
+              <button
+                onClick={() => setActiveTab('awards')}
+                className={`flex items-center space-x-2 pb-4 px-6 font-bold uppercase tracking-wider text-sm transition focus:outline-none border-b-2 ${
+                  activeTab === 'awards'
+                    ? 'border-[#66fcf1] text-[#66fcf1]'
+                    : 'border-transparent text-gray-400 hover:text-white'
+                }`}
+              >
+                <Trophy className="w-4 h-4" />
+                <span>Match Awards</span>
+              </button>
+            )}
           </div>
 
           {/* Switch board components */}
@@ -603,6 +666,11 @@ export default function MatchDetailPage() {
                   </div>
                 )}
 
+                {/* Mobile/Tablet Wagon Wheel (renders above commentary on mobile/tablet) */}
+                <div className="lg:hidden">
+                  <WagonWheel points={currentMatch.wagonWheel} />
+                </div>
+
                 {/* Commentary Stream Feed */}
                 <div className="glass-card p-6 border-[#66fcf1]/10">
                   <div className="flex items-center space-x-2.5 mb-6 select-none">
@@ -636,7 +704,7 @@ export default function MatchDetailPage() {
                           >
                             <div className="flex-shrink-0 bg-[#0b0c10] border border-[#66fcf1]/20 rounded px-2.5 py-1 text-center min-w-[55px] select-none">
                               <p className="text-xs font-mono font-bold text-white">
-                                {comm.overNum}.{comm.ballNum}
+                                {comm.ballNum === 6 ? `${comm.overNum + 1}.0` : `${comm.overNum}.${comm.ballNum}`}
                               </p>
                               <span className="text-[8px] uppercase tracking-widest font-black text-[#66fcf1] block mt-0.5">
                                 {tag}
@@ -652,11 +720,11 @@ export default function MatchDetailPage() {
               </div>
 
               {/* Right Column: Wagon Wheel Shot Vectors */}
-              <div>
+              <div className="hidden lg:block">
                 <WagonWheel points={currentMatch.wagonWheel} />
               </div>
             </div>
-          ) : (
+          ) : activeTab === 'scorecard' ? (
             /* Redesigned Scorecard Tab */
             <div className="space-y-10">
               {currentMatch.innings.map((inn, idx) => (
@@ -754,9 +822,17 @@ export default function MatchDetailPage() {
                 </div>
               ))}
             </div>
+          ) : (
+            <MatchAwards match={currentMatch} />
           )}
         </main>
       </div>
+
+      {/* Real-time score update animations overlay */}
+      <LiveScoreAnimations
+        event={currentBallEvent}
+        onClear={() => setCurrentBallEvent(null)}
+      />
     </div>
   );
 }

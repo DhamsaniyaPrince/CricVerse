@@ -25,7 +25,9 @@ export default function RootLayout({
       className={`${outfit.variable} dark h-full antialiased`}
     >
       <head>
+        <script src="https://accounts.google.com/gsi/client" async defer></script>
         <script
+          id="theme-loader"
           dangerouslySetInnerHTML={{
             __html: `
               try {

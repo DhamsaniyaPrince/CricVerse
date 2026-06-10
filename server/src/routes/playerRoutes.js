@@ -5,17 +5,21 @@ const {
   getPlayers,
   getPlayerById,
   updatePlayer,
-  deletePlayer
+  deletePlayer,
+  addPlayerXp
 } = require('../controllers/playerController');
-const { protect, authorize } = require('../middleware/auth');
+const { protect, authorize, optionalProtect } = require('../middleware/auth');
 
 router.route('/')
   .post(protect, authorize('organizer', 'admin'), createPlayer)
   .get(getPlayers);
 
+router.route('/xp')
+  .post(protect, addPlayerXp);
+
 router.route('/:id')
-  .get(getPlayerById)
-  .put(protect, authorize('organizer', 'admin'), updatePlayer)
-  .delete(protect, authorize('organizer', 'admin'), deletePlayer);
+  .get(optionalProtect, getPlayerById)
+  .put(protect, updatePlayer)
+  .delete(protect, authorize('admin'), deletePlayer);
 
 module.exports = router;

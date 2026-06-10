@@ -6,6 +6,12 @@ const playerSchema = new mongoose.Schema({
     required: [true, 'Player name is required'],
     trim: true
   },
+  username: {
+    type: String,
+    unique: true,
+    trim: true,
+    lowercase: true
+  },
   avatar: {
     type: String,
     default: ''
@@ -82,6 +88,13 @@ const playerSchema = new mongoose.Schema({
     balls: Number,
     wickets: Number,
     overs: Number,
+    opponentName: String,
+    tournamentName: String,
+    resultText: String,
+    mvpStatus: {
+      type: Boolean,
+      default: false
+    },
     date: {
       type: Date,
       default: Date.now
@@ -95,10 +108,97 @@ const playerSchema = new mongoose.Schema({
     },
     description: String
   }],
+  longestStreak: {
+    type: Number,
+    default: 0
+  },
+  recentFormRating: {
+    type: Number,
+    default: 0
+  },
+  bestMatch: {
+    matchId: { type: mongoose.Schema.Types.ObjectId, ref: 'Match' },
+    title: String,
+    runs: Number,
+    wickets: Number
+  },
+  worstMatch: {
+    matchId: { type: mongoose.Schema.Types.ObjectId, ref: 'Match' },
+    title: String,
+    runs: Number,
+    wickets: Number
+  },
+  playerLevel: {
+    type: Number,
+    default: 1
+  },
+  playerXP: {
+    type: Number,
+    default: 0
+  },
+  careerRank: {
+    type: String,
+    default: '🏏 Rookie'
+  },
+  badges: {
+    type: [String],
+    default: []
+  },
+  achievementHistory: [{
+    title: String,
+    description: String,
+    date: {
+      type: Date,
+      default: Date.now
+    }
+  }],
+  xpHistory: [{
+    amount: Number,
+    reason: String,
+    matchId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Match'
+    },
+    date: {
+      type: Date,
+      default: Date.now
+    }
+  }],
   createdAt: {
     type: Date,
     default: Date.now
   }
+});
+
+playerSchema.pre('save', async function(next) {
+  if (!this.username) {
+    // Generate slug from name
+    let slug = this.name
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-');
+    
+    const Player = mongoose.model('Player');
+    let usernameExists = await Player.exists({ username: slug });
+    let counter = 1;
+    let uniqueSlug = slug;
+    while (usernameExists) {
+      uniqueSlug = `${slug}-${counter}`;
+      usernameExists = await Player.exists({ username: uniqueSlug });
+      counter++;
+    }
+    this.username = uniqueSlug;
+  } else {
+    this.username = this.username
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-');
+  }
+  next();
 });
 
 module.exports = mongoose.model('Player', playerSchema);

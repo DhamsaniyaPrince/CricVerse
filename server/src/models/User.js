@@ -18,15 +18,28 @@ const userSchema = new mongoose.Schema({
     lowercase: true,
     match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please fill a valid email address']
   },
+  name: {
+    type: String,
+    trim: true
+  },
   password: {
     type: String,
     required: function() {
-      return !this.googleId;
+      return this.authProvider !== 'google';
     }
   },
   googleId: {
     type: String,
     sparse: true
+  },
+  authProvider: {
+    type: String,
+    enum: ['local', 'google'],
+    default: 'local'
+  },
+  profileImage: {
+    type: String,
+    default: ''
   },
   avatar: {
     type: String,
@@ -36,6 +49,15 @@ const userSchema = new mongoose.Schema({
     type: String,
     enum: ['player', 'captain', 'organizer', 'admin'],
     default: 'player'
+  },
+  lastLogin: {
+    type: Date,
+    default: Date.now
+  },
+  accountStatus: {
+    type: String,
+    enum: ['active', 'suspended', 'pending'],
+    default: 'active'
   },
   isBanned: {
     type: Boolean,
@@ -58,8 +80,14 @@ const userSchema = new mongoose.Schema({
   }
 });
 
-// Hash password before saving
+// Sync isBanned and accountStatus, and hash password before saving
 userSchema.pre('save', async function(next) {
+  if (this.isModified('isBanned')) {
+    this.accountStatus = this.isBanned ? 'suspended' : 'active';
+  } else if (this.isModified('accountStatus')) {
+    this.isBanned = this.accountStatus === 'suspended';
+  }
+
   if (!this.isModified('password')) return next();
   try {
     const salt = await bcrypt.genSalt(10);

@@ -11,6 +11,17 @@ const teamSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  banner: {
+    type: String,
+    default: ''
+  },
+  description: {
+    type: String,
+    default: ''
+  },
+  achievements: [{
+    type: String
+  }],
   joinCode: {
     type: String,
     unique: true,

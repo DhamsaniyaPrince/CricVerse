@@ -70,7 +70,7 @@ interface ReportListItem {
 
 export default function AdminDashboardPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'tournaments' | 'matches' | 'reports'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'tournaments' | 'matches' | 'reports' | 'logs'>('overview');
   const [isLoading, setIsLoading] = useState(true);
   const [submittingId, setSubmittingId] = useState<string | null>(null);
 
@@ -80,6 +80,7 @@ export default function AdminDashboardPage() {
   const [tournaments, setTournaments] = useState<TournamentListItem[]>([]);
   const [matches, setMatches] = useState<MatchListItem[]>([]);
   const [reports, setReports] = useState<ReportListItem[]>([]);
+  const [logs, setLogs] = useState<any[]>([]);
 
   // User filter states
   const [userSearch, setUserSearch] = useState('');
@@ -151,6 +152,17 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const fetchAuditLogs = async () => {
+    try {
+      const response = await api.get('/admin/audit-logs');
+      if (response.data.success) {
+        setLogs(response.data.data);
+      }
+    } catch (err) {
+      console.error('Error fetching audit logs:', err);
+    }
+  };
+
   const loadTabData = async () => {
     setIsLoading(true);
     await fetchOverviewStats();
@@ -159,6 +171,7 @@ export default function AdminDashboardPage() {
     if (activeTab === 'tournaments') await fetchPendingTournaments();
     if (activeTab === 'matches') await fetchMatches();
     if (activeTab === 'reports') await fetchReports();
+    if (activeTab === 'logs') await fetchAuditLogs();
     
     setIsLoading(false);
   };
@@ -256,17 +269,16 @@ export default function AdminDashboardPage() {
 
   return (
     <ProtectedRoute allowedRoles={['admin']}>
-      <div className="flex flex-col min-h-screen bg-[#0b0c10]">
+      <div className="flex flex-col h-screen bg-[#0b0c10] overflow-hidden">
         <Navbar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
 
-        <div className="flex flex-1">
+        <div className="flex flex-1 overflow-hidden">
           <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
           <main className="flex-1 px-4 md:px-8 py-8 overflow-y-auto max-w-7xl mx-auto w-full">
-            {/* Header Title */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4 border-b border-red-500/10 pb-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4 border-b border-[#66fcf1]/10 pb-6">
               <div>
-                <h1 className="text-3xl font-black text-white uppercase tracking-wider flex items-center space-x-2 text-red-500">
+                <h1 className="text-3xl font-black text-white uppercase tracking-wider flex items-center space-x-2 text-[#66fcf1]">
                   <ShieldAlert className="w-8 h-8" />
                   <span>Admin Control Center</span>
                 </h1>
@@ -290,7 +302,7 @@ export default function AdminDashboardPage() {
                 onClick={() => setActiveTab('overview')}
                 className={`pb-4 px-6 font-bold uppercase tracking-wider text-xs transition border-b-2 ${
                   activeTab === 'overview'
-                    ? 'border-red-500 text-red-500'
+                    ? 'border-[#66fcf1] text-[#66fcf1]'
                     : 'border-transparent text-gray-400 hover:text-white'
                 }`}
               >
@@ -300,7 +312,7 @@ export default function AdminDashboardPage() {
                 onClick={() => setActiveTab('users')}
                 className={`pb-4 px-6 font-bold uppercase tracking-wider text-xs transition border-b-2 ${
                   activeTab === 'users'
-                    ? 'border-red-500 text-red-500'
+                    ? 'border-[#66fcf1] text-[#66fcf1]'
                     : 'border-transparent text-gray-400 hover:text-white'
                 }`}
               >
@@ -310,7 +322,7 @@ export default function AdminDashboardPage() {
                 onClick={() => setActiveTab('tournaments')}
                 className={`pb-4 px-6 font-bold uppercase tracking-wider text-xs transition border-b-2 ${
                   activeTab === 'tournaments'
-                    ? 'border-red-500 text-red-500'
+                    ? 'border-[#66fcf1] text-[#66fcf1]'
                     : 'border-transparent text-gray-400 hover:text-white'
                 }`}
               >
@@ -320,7 +332,7 @@ export default function AdminDashboardPage() {
                 onClick={() => setActiveTab('matches')}
                 className={`pb-4 px-6 font-bold uppercase tracking-wider text-xs transition border-b-2 ${
                   activeTab === 'matches'
-                    ? 'border-red-500 text-red-500'
+                    ? 'border-[#66fcf1] text-[#66fcf1]'
                     : 'border-transparent text-gray-400 hover:text-white'
                 }`}
               >
@@ -330,17 +342,27 @@ export default function AdminDashboardPage() {
                 onClick={() => setActiveTab('reports')}
                 className={`pb-4 px-6 font-bold uppercase tracking-wider text-xs transition border-b-2 ${
                   activeTab === 'reports'
-                    ? 'border-red-500 text-red-500'
+                    ? 'border-[#66fcf1] text-[#66fcf1]'
                     : 'border-transparent text-gray-400 hover:text-white'
                 }`}
               >
                 Reports Desk ({stats?.reports.pending || 0})
               </button>
+              <button
+                onClick={() => setActiveTab('logs')}
+                className={`pb-4 px-6 font-bold uppercase tracking-wider text-xs transition border-b-2 ${
+                  activeTab === 'logs'
+                    ? 'border-[#66fcf1] text-[#66fcf1]'
+                    : 'border-transparent text-gray-400 hover:text-white'
+                }`}
+              >
+                Audit Logs
+              </button>
             </div>
 
             {isLoading ? (
               <div className="flex justify-center items-center py-32">
-                <RefreshCw className="w-10 h-10 text-red-500 animate-spin" />
+                <RefreshCw className="w-10 h-10 text-[#66fcf1] animate-spin" />
               </div>
             ) : (
               <AnimatePresence mode="wait">
@@ -354,7 +376,7 @@ export default function AdminDashboardPage() {
                   >
                     {/* Counters grid */}
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                      <div className="glass-card p-5 border-red-500/10">
+                      <div className="glass-card p-5 border-[#66fcf1]/10">
                         <div className="flex justify-between items-start">
                           <div>
                             <span className="text-[9px] text-gray-500 font-bold block uppercase tracking-wider">Total Accounts</span>
@@ -362,12 +384,12 @@ export default function AdminDashboardPage() {
                           </div>
                           <Users className="w-5 h-5 text-gray-600" />
                         </div>
-                        <div className="mt-3 text-[10px] text-red-400 font-bold uppercase">
+                        <div className="mt-3 text-[10px] text-red-500 font-bold uppercase">
                           {stats.users.banned} Accounts Suspended
                         </div>
                       </div>
 
-                      <div className="glass-card p-5 border-red-500/10">
+                      <div className="glass-card p-5 border-[#66fcf1]/10">
                         <div className="flex justify-between items-start">
                           <div>
                             <span className="text-[9px] text-gray-500 font-bold block uppercase tracking-wider">Tournaments</span>
@@ -380,7 +402,7 @@ export default function AdminDashboardPage() {
                         </div>
                       </div>
 
-                      <div className="glass-card p-5 border-red-500/10">
+                      <div className="glass-card p-5 border-[#66fcf1]/10">
                         <div className="flex justify-between items-start">
                           <div>
                             <span className="text-[9px] text-gray-500 font-bold block uppercase tracking-wider">Matches Audited</span>
@@ -393,7 +415,7 @@ export default function AdminDashboardPage() {
                         </div>
                       </div>
 
-                      <div className="glass-card p-5 border-red-500/10">
+                      <div className="glass-card p-5 border-[#66fcf1]/10">
                         <div className="flex justify-between items-start">
                           <div>
                             <span className="text-[9px] text-gray-500 font-bold block uppercase tracking-wider">Unresolved Concerns</span>
@@ -484,7 +506,7 @@ export default function AdminDashboardPage() {
 
                       <button
                         onClick={fetchUsers}
-                        className="py-2.5 px-6 rounded-xl bg-red-600 text-white font-bold text-xs uppercase hover:bg-red-500 transition duration-200"
+                        className="py-2.5 px-6 rounded-xl bg-[#66fcf1] text-[#0b0c10] font-black text-xs uppercase hover:bg-cyan-400 transition duration-200"
                       >
                         Filter
                       </button>
@@ -767,6 +789,61 @@ export default function AdminDashboardPage() {
                         <p className="text-gray-500 text-xs mt-1">No user reports have been filed yet.</p>
                       </div>
                     )}
+                  </motion.div>
+                )}
+
+                {/* 6. AUDIT LOGS TAB */}
+                {activeTab === 'logs' && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="space-y-6"
+                  >
+                    <div className="glass-card p-6 border-[#66fcf1]/10">
+                      <h3 className="text-xs uppercase font-extrabold tracking-widest text-[#66fcf1] mb-6 font-mono">
+                        System Activity Audit Logs
+                      </h3>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left text-xs text-gray-400">
+                          <thead className="text-[10px] uppercase text-gray-500 font-bold border-b border-white/5">
+                            <tr>
+                              <th className="py-3 px-3">Timestamp</th>
+                              <th className="py-3 px-3">Actor (Role)</th>
+                              <th className="py-3 px-3">Action</th>
+                              <th className="py-3 px-3">Details</th>
+                              <th className="py-3 px-3 font-mono text-right">IP Address</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {logs.map((log) => (
+                              <tr key={log._id} className="border-b border-white/5 hover:bg-white/5 transition">
+                                <td className="py-3.5 px-3 font-mono text-gray-500">{new Date(log.createdAt).toLocaleString()}</td>
+                                <td className="py-3.5 px-3">
+                                  <span className="font-bold text-white block">{log.username}</span>
+                                  <span className="text-[9px] text-gray-500 uppercase block">{log.userRole}</span>
+                                </td>
+                                <td className="py-3.5 px-3">
+                                  <span className="bg-[#66fcf1]/10 border border-[#66fcf1]/25 text-[#66fcf1] text-[9px] font-bold px-2 py-0.5 rounded uppercase font-mono">
+                                    {log.action}
+                                  </span>
+                                </td>
+                                <td className="py-3.5 px-3 text-white max-w-xs truncate">{log.details}</td>
+                                <td className="py-3.5 px-3 font-mono text-xs text-gray-500 text-right">{log.ipAddress}</td>
+                              </tr>
+                            ))}
+
+                            {logs.length === 0 && (
+                              <tr>
+                                <td colSpan={5} className="py-12 text-center text-gray-600 italic">
+                                  No audit log records stored.
+                                </td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
                   </motion.div>
                 )}
               </AnimatePresence>

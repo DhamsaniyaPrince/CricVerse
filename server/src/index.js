@@ -1,3 +1,6 @@
+app.get("/", (req, res) => {
+  res.send("🏏 CricVerse Backend is Live!");
+});
 const express = require('express');
 const http = require('http');
 const cors = require('cors');

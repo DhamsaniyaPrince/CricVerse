@@ -169,7 +169,7 @@ export default function LeaderboardPage() {
   useEffect(() => {
     if (!liveMatchId) return;
 
-    const socket = io(process.env.NEXT_PUBLIC_API_URL || 'http://process.env.REACT_APP_API_URLgit status', {
+    const socket = io(process.env.NEXT_PUBLIC_API_URL || 'http://process.env.NEXT_PUBLIC_API_URLgit status', {
       transports: ['websocket'],
       upgrade: false
     });

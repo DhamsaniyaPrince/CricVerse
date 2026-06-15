@@ -3,7 +3,7 @@ import { useDispatch } from 'react-redux';
 import { io, Socket } from 'socket.io-client';
 import { appendCommentary, appendWagonPoint, updateLiveScore } from '../store/slices/matchSlice';
 
-const SOCKET_URL = process.env.NEXT_PUBLIC_API_URL || 'http://process.env.REACT_APP_API_URLgit status';
+const SOCKET_URL = process.env.NEXT_PUBLIC_API_URL || 'http://process.env.NEXT_PUBLIC_API_URLgit status';
 
 export const useSocket = (matchId?: string, onBallPlayed?: (data: any) => void) => {
   const dispatch = useDispatch();

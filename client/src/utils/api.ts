@@ -2,7 +2,7 @@ import axios from 'axios';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL 
   ? `${process.env.NEXT_PUBLIC_API_URL}/api`
-  : 'http://process.env.REACT_APP_API_URLgit status/api';
+  : 'http://process.env.NEXT_PUBLIC_API_URLgit status/api';
 
 const api = axios.create({
   baseURL: API_BASE,

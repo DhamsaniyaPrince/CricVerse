@@ -1,29 +1,29 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/store';
 import { logout } from '@/store/slices/authSlice';
-import { io } from 'socket.io-client';
 import api from '@/utils/api';
 import {
-  User,
-  LogOut,
-  ChevronDown,
-  Activity,
-  Award,
-  Trophy,
-  UserPlus,
-  Menu,
-  Settings,
-  Bell,
-  Trash,
-  CheckCheck,
-  Sun,
-  Moon
+    Activity,
+    Award,
+    Bell,
+    CheckCheck,
+    ChevronDown,
+    LogOut,
+    Menu,
+    Moon,
+    Settings,
+    Sun,
+    Trash,
+    Trophy,
+    User,
+    UserPlus
 } from 'lucide-react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { io } from 'socket.io-client';
 
 interface NotificationItem {
   _id: string;
@@ -105,7 +105,7 @@ export default function Navbar({ onMenuClick }: { onMenuClick?: () => void }) {
       fetchNotifications();
 
       // Connect to Socket.io for user private room
-      const socket = io(process.env.NEXT_PUBLIC_API_URL || 'http://process.env.REACT_APP_API_URLgit status', {
+      const socket = io(process.env.NEXT_PUBLIC_API_URL || 'http://process.env.NEXT_PUBLIC_API_URLgit status', {
         transports: ['websocket'],
         upgrade: false
       });

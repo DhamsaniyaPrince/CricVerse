@@ -11,5 +11,5 @@ export const getSiteUrl = (): string => {
 };
 
 export const getApiUrl = (): string => {
-  return process.env.NEXT_PUBLIC_API_URL || 'http://process.env.REACT_APP_API_URLgit status';
+  return process.env.NEXT_PUBLIC_API_URL || 'http://process.env.NEXT_PUBLIC_API_URLgit status';
 };

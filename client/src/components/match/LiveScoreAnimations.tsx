@@ -84,6 +84,17 @@ export default function LiveScoreAnimations({ event, onClear }: LiveScoreAnimati
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const animFrameIdRef = useRef<number | null>(null);
 
+  // Spawns floaters at randomized horizontal positions near the center
+  const addFloater = (text: string, color: string) => {
+    const id = Math.random().toString(36).substring(2, 11);
+    const x = Math.floor(Math.random() * 60) - 30; // offset from center
+    const y = -10;
+    setFloaters((prev) => [...prev, { id, text, color, x, y }]);
+    setTimeout(() => {
+      setFloaters((prev) => prev.filter((f) => f.id !== id));
+    }, 1200);
+  };
+
   // Trigger animations based on scorer events
   useEffect(() => {
     if (!event) return;
@@ -92,7 +103,7 @@ export default function LiveScoreAnimations({ event, onClear }: LiveScoreAnimati
 
     // 1. WICKET ANIMATION
     if (isWicket) {
-      setActiveAnim('wicket');
+      setTimeout(() => setActiveAnim('wicket'), 0);
       audioService.playWicketSound();
       const timer = setTimeout(() => {
         setActiveAnim(null);
@@ -103,7 +114,7 @@ export default function LiveScoreAnimations({ event, onClear }: LiveScoreAnimati
 
     // 2. BOUNDARY SIX ANIMATION
     if (!isExtra && runs === 6) {
-      setActiveAnim('six');
+      setTimeout(() => setActiveAnim('six'), 0);
       audioService.playBoundarySound(true);
       const timer = setTimeout(() => {
         setActiveAnim(null);
@@ -114,7 +125,7 @@ export default function LiveScoreAnimations({ event, onClear }: LiveScoreAnimati
 
     // 3. BOUNDARY FOUR ANIMATION
     if (!isExtra && runs === 4) {
-      setActiveAnim('four');
+      setTimeout(() => setActiveAnim('four'), 0);
       audioService.playBoundarySound(false);
       const timer = setTimeout(() => {
         setActiveAnim(null);
@@ -125,7 +136,7 @@ export default function LiveScoreAnimations({ event, onClear }: LiveScoreAnimati
 
     // 4. EXTRAS FLOATING INDICATOR
     if (isExtra && (extraType === 'wide' || extraType === 'no-ball')) {
-      setActiveAnim('extra');
+      setTimeout(() => setActiveAnim('extra'), 0);
       audioService.playRunsSound();
       
       const label = extraType === 'wide' ? 'WIDE +1' : 'NO BALL +1';
@@ -142,7 +153,7 @@ export default function LiveScoreAnimations({ event, onClear }: LiveScoreAnimati
 
     // 5. REGULAR RUNS FLOATING INDICATOR (1, 2, 3)
     if (!isExtra && runs > 0 && runs < 4) {
-      setActiveAnim('runs');
+      setTimeout(() => setActiveAnim('runs'), 0);
       audioService.playRunsSound();
       
       addFloater(`+${runs}`, 'text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.6)]');
@@ -157,17 +168,6 @@ export default function LiveScoreAnimations({ event, onClear }: LiveScoreAnimati
     // Default fallback
     onClear();
   }, [event]);
-
-  // Spawns floaters at randomized horizontal positions near the center
-  const addFloater = (text: string, color: string) => {
-    const id = Math.random().toString(36).substr(2, 9);
-    const x = Math.floor(Math.random() * 60) - 30; // offset from center
-    const y = -10;
-    setFloaters((prev) => [...prev, { id, text, color, x, y }]);
-    setTimeout(() => {
-      setFloaters((prev) => prev.filter((f) => f.id !== id));
-    }, 1200);
-  };
 
   // Canvas fireworks loop
   useEffect(() => {

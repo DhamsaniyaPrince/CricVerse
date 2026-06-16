@@ -16,6 +16,43 @@ const addBallToOvers = (currentOvers, isExtraValidBall) => {
   return oversInt + (balls / 10);
 };
 
+// Helper to populate match details
+const populateMatchDetails = async (match) => {
+  return await Match.populate(match, [
+    {
+      path: 'teamA',
+      select: 'name logo players',
+      populate: {
+        path: 'players',
+        select: 'name role battingStyle bowlingStyle'
+      }
+    },
+    {
+      path: 'teamB',
+      select: 'name logo players',
+      populate: {
+        path: 'players',
+        select: 'name role battingStyle bowlingStyle'
+      }
+    },
+    { path: 'playingXIA', select: 'name role battingStyle bowlingStyle' },
+    { path: 'playingXIB', select: 'name role battingStyle bowlingStyle' },
+    { path: 'innings.battingTeam', select: 'name logo' },
+    { path: 'innings.bowlingTeam', select: 'name logo' },
+    { path: 'innings.scorecard.batsmen.player', select: 'name role' },
+    { path: 'innings.scorecard.batsmen.bowler', select: 'name' },
+    { path: 'innings.scorecard.bowlers.player', select: 'name role' },
+    { path: 'liveState.battingTeam', select: 'name logo' },
+    { path: 'liveState.bowlingTeam', select: 'name logo' },
+    { path: 'liveState.striker', select: 'name role battingStyle' },
+    { path: 'liveState.nonStriker', select: 'name role battingStyle' },
+    { path: 'liveState.currentBowler', select: 'name role bowlingStyle' },
+    { path: 'tournament', select: 'name organizer teams' },
+    { path: 'result.winner', select: 'name logo' },
+    { path: 'playerOfMatch', select: 'name role' }
+  ]);
+};
+
 // Helper to suggest Player of the Match
 const suggestPlayerOfMatch = (match) => {
   try {
@@ -837,6 +874,8 @@ exports.updateMatchScore = async (req, res) => {
 
     await match.save();
 
+    const populatedMatch = await populateMatchDetails(match);
+
     if (match.status === 'Completed') {
       await syncMatchPlayersStats(match);
       if (match.tournament) {
@@ -878,7 +917,7 @@ exports.updateMatchScore = async (req, res) => {
         matchId: match._id,
         score: match.score,
         liveState: {
-          ...match.liveState.toObject()
+          ...populatedMatch.liveState.toObject()
         },
         innings: match.innings,
         lastBall: {
@@ -905,7 +944,7 @@ exports.updateMatchScore = async (req, res) => {
       }
     }
 
-    res.json({ success: true, data: match });
+    res.json({ success: true, data: populatedMatch });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, error: error.message });
@@ -972,12 +1011,13 @@ exports.endMatch = async (req, res) => {
       await Team.findByIdAndUpdate(loserId, { $inc: { 'stats.played': 1, 'stats.lost': 1 } });
     }
 
+    const populatedMatch = await populateMatchDetails(match);
     const io = req.app.get('io');
     if (io) {
-      io.to(`match:${match._id}`).emit('match:update', match);
+      io.to(`match:${match._id}`).emit('match:update', populatedMatch);
     }
 
-    res.json({ success: true, data: match });
+    res.json({ success: true, data: populatedMatch });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
@@ -999,8 +1039,8 @@ exports.seedMatches = async (req, res) => {
     // 1. Create Users
     await User.create({
       username: 'cricadmin',
-      email: 'admin@cricverse.com',
-      password: 'password123',
+      email: 'prince@gmail.com',
+      password: 'princedhamsaniya',
       role: 'admin'
     });
 
@@ -1162,19 +1202,20 @@ exports.setupMatchInnings = async (req, res) => {
 
     await match.save();
 
+    const populatedMatch = await populateMatchDetails(match);
     const io = req.app.get('io');
     if (io) {
       io.to(`match:${match._id}`).emit('match:update', {
         matchId: match._id,
         score: match.score,
         liveState: {
-          ...match.liveState.toObject()
+          ...populatedMatch.liveState.toObject()
         },
         innings: match.innings
       });
     }
 
-    res.json({ success: true, data: match, message: `Innings ${inningsNumber} initialized successfully!` });
+    res.json({ success: true, data: populatedMatch, message: `Innings ${inningsNumber} initialized successfully!` });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
@@ -1320,20 +1361,21 @@ exports.undoLastBall = async (req, res) => {
       }
     }
 
+    const populatedMatch = await populateMatchDetails(match);
     const io = req.app.get('io');
     if (io) {
       io.to(`match:${match._id}`).emit('match:update', {
         matchId: match._id,
         score: match.score,
         liveState: {
-          ...match.liveState.toObject()
+          ...populatedMatch.liveState.toObject()
         },
         innings: match.innings,
         isUndo: true
       });
     }
 
-    res.json({ success: true, data: match, message: 'Last ball successfully undone!' });
+    res.json({ success: true, data: populatedMatch, message: 'Last ball successfully undone!' });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, error: error.message });
@@ -1447,7 +1489,8 @@ exports.updateMatch = async (req, res) => {
     const { triggerMatchUpdatedNotification } = require('../services/notificationService');
     await triggerMatchUpdatedNotification(match);
 
-    res.json({ success: true, data: match });
+    const populatedMatch = await populateMatchDetails(match);
+    res.json({ success: true, data: populatedMatch });
   } catch (error) {
     res.status(400).json({ success: false, error: error.message });
   }
@@ -1496,7 +1539,8 @@ exports.setupMatchReady = async (req, res) => {
 
     await match.save();
 
-    res.json({ success: true, data: match, message: 'Match roster and toss configured. Status set to Ready!' });
+    const populatedMatch = await populateMatchDetails(match);
+    res.json({ success: true, data: populatedMatch, message: 'Match roster and toss configured. Status set to Ready!' });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
@@ -1520,19 +1564,20 @@ exports.swapStrike = async (req, res) => {
 
     await match.save();
 
+    const populatedMatch = await populateMatchDetails(match);
     const io = req.app.get('io');
     if (io) {
       io.to(`match:${match._id}`).emit('match:update', {
         matchId: match._id,
         score: match.score,
         liveState: {
-          ...match.liveState.toObject()
+          ...populatedMatch.liveState.toObject()
         },
         innings: match.innings
       });
     }
 
-    res.json({ success: true, data: match, message: 'Strike swapped successfully!' });
+    res.json({ success: true, data: populatedMatch, message: 'Strike swapped successfully!' });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
@@ -1597,19 +1642,20 @@ exports.changeBowler = async (req, res) => {
 
     await match.save();
 
+    const populatedMatch = await populateMatchDetails(match);
     const io = req.app.get('io');
     if (io) {
       io.to(`match:${match._id}`).emit('match:update', {
         matchId: match._id,
         score: match.score,
         liveState: {
-          ...match.liveState.toObject()
+          ...populatedMatch.liveState.toObject()
         },
         innings: match.innings
       });
     }
 
-    res.json({ success: true, data: match, message: 'Bowler changed successfully!' });
+    res.json({ success: true, data: populatedMatch, message: 'Bowler changed successfully!' });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
@@ -1640,19 +1686,20 @@ exports.updatePlayerOfMatch = async (req, res) => {
     match.playerOfMatch = playerId;
     await match.save();
 
+    const populatedMatch = await populateMatchDetails(match);
     const io = req.app.get('io');
     if (io) {
       io.to(`match:${match._id}`).emit('match:update', {
         matchId: match._id,
         score: match.score,
         liveState: {
-          ...match.liveState.toObject()
+          ...populatedMatch.liveState.toObject()
         },
         innings: match.innings
       });
     }
 
-    res.json({ success: true, data: match, message: 'Player of the Match updated successfully!' });
+    res.json({ success: true, data: populatedMatch, message: 'Player of the Match updated successfully!' });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }

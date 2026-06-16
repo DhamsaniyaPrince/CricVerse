@@ -32,8 +32,8 @@ const seedData = async () => {
     console.log('Creating users...');
     await User.create({
       username: 'cricadmin',
-      email: 'admin@cricverse.com',
-      password: 'password123',
+      email: 'prince@gmail.com',
+      password: 'princedhamsaniya',
       role: 'admin'
     });
 

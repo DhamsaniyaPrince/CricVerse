@@ -332,7 +332,7 @@ export default function AnalyticsDashboardPage() {
             </p>
             <p className="text-[10px] text-gray-400 uppercase mt-1.5 font-bold flex items-center justify-center sm:justify-start space-x-1">
               {p.team?.logo && (
-                <img src={p.team.logo} className="w-3.5 h-3.5 rounded-sm object-cover mr-1" />
+                <img src={p.team?.logo} className="w-3.5 h-3.5 rounded-sm object-cover mr-1" />
               )}
               <span>{p.team?.name || 'Free Agent'}</span>
             </p>
@@ -566,7 +566,7 @@ export default function AnalyticsDashboardPage() {
                                   </span>
                                   <span className="text-[9px] text-gray-500 uppercase flex items-center">
                                     {item.team?.logo && (
-                                      <img src={item.team.logo} alt={item.team.name} className="w-3 h-3 object-cover rounded-sm mr-1" />
+                                      <img src={item.team?.logo} alt={item.team?.name || 'Team'} className="w-3 h-3 object-cover rounded-sm mr-1" />
                                     )}
                                     <span className="truncate max-w-[80px]">{item.team?.name || 'Free Agent'}</span>
                                   </span>

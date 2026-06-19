@@ -141,10 +141,10 @@ export default function MatchDetailPage() {
 
   const activeInnings = currentMatch && activeInningsIdx >= 0 ? currentMatch.innings[activeInningsIdx] : null;
   const activeBattingTeamId = activeInnings?.battingTeam?._id || activeInnings?.battingTeam;
-  const isTeamBActiveBatting = activeBattingTeamId === teamB._id;
+  const isTeamBActiveBatting = activeBattingTeamId === teamB?._id;
 
-  const battingTeamName = isTeamBActiveBatting ? teamB.name : teamA.name;
-  const bowlingTeamName = isTeamBActiveBatting ? teamA.name : teamB.name;
+  const battingTeamName = isTeamBActiveBatting ? (teamB?.name || 'Team B') : (teamA?.name || 'Team A');
+  const bowlingTeamName = isTeamBActiveBatting ? (teamA?.name || 'Team A') : (teamB?.name || 'Team B');
 
   const battingScore = isTeamBActiveBatting ? score.teamB : score.teamA;
   const bowlingScore = isTeamBActiveBatting ? score.teamA : score.teamB;
@@ -330,7 +330,13 @@ export default function MatchDetailPage() {
             <h2 className="text-sm font-bold text-white uppercase tracking-wider font-mono">
               {status === 'Completed' && result ? (
                 result.winner ? (
-                  `${formatPlayerName(typeof result.winner === 'object' ? result.winner.name : (result.winner === teamA._id ? teamA.name : teamB.name))} ${result.margin?.toLowerCase().startsWith('won') ? result.margin : 'won ' + result.margin}`
+                  `${formatPlayerName(
+                    result.winner
+                      ? (typeof result.winner === 'object'
+                          ? (result.winner?.name || 'Winner')
+                          : (result.winner === teamA?._id ? (teamA?.name || 'Team A') : (teamB?.name || 'Team B')))
+                      : 'Winner'
+                  )} ${result.margin?.toLowerCase().startsWith('won') ? result.margin : 'won ' + result.margin}`
                 ) : (
                   result.margin || 'Match Tied'
                 )
@@ -339,7 +345,7 @@ export default function MatchDetailPage() {
               ) : isLive ? (
                 `${formatPlayerName(battingTeamName)} is setting target (CRR: ${crr})`
               ) : (
-                `Match starting soon. Toss won by ${formatPlayerName(currentMatch.toss?.wonBy === teamA._id ? teamA.name : teamB.name)}`
+                `Match starting soon. Toss won by ${formatPlayerName(currentMatch.toss?.wonBy === teamA?._id ? (teamA?.name || 'Team A') : (teamB?.name || 'Team B'))}`
               )}
             </h2>
           </div>
@@ -727,11 +733,17 @@ export default function MatchDetailPage() {
           ) : activeTab === 'scorecard' ? (
             /* Redesigned Scorecard Tab */
             <div className="space-y-10">
-              {currentMatch.innings.map((inn, idx) => (
+              {(currentMatch.innings || []).map((inn, idx) => (
                 <div key={idx} className="glass-card p-6 border-[#66fcf1]/10 space-y-6">
                   <div className="border-b border-[#66fcf1]/15 pb-4 flex justify-between items-center">
                     <h3 className="text-lg font-black text-white uppercase tracking-wider">
-                      {formatPlayerName(inn.battingTeam.name)} Innings
+                      {formatPlayerName(
+                        inn.battingTeam 
+                          ? (typeof inn.battingTeam === 'object' 
+                              ? inn.battingTeam?.name 
+                              : (inn.battingTeam === teamA?._id ? teamA?.name : teamB?.name))
+                          : 'Batting Team'
+                      )} Innings
                     </h3>
                     <span className="font-mono text-sm text-gray-500 uppercase">
                       Innings {idx + 1}
@@ -755,11 +767,11 @@ export default function MatchDetailPage() {
                           </tr>
                         </thead>
                         <tbody>
-                          {inn.scorecard.batsmen.map((batsman, bIdx) => {
+                          {(inn.scorecard?.batsmen || []).map((batsman, bIdx) => {
                             const sr = batsman.balls > 0 ? ((batsman.runs / batsman.balls) * 100).toFixed(1) : '0.0';
                             return (
                               <tr key={bIdx} className="border-b border-white/5 hover:bg-white/5 transition">
-                                <td className="py-3 px-2 font-bold text-white font-sans uppercase">{formatPlayerName(batsman.player.name)}</td>
+                                <td className="py-3 px-2 font-bold text-white font-sans uppercase">{formatPlayerName(batsman.player?.name || 'Batsman')}</td>
                                 <td className="py-3 px-2 text-xs truncate max-w-[150px]">
                                   {batsman.howOut === 'Not Out' ? (
                                     <span className="text-[#39ff14] font-semibold">not out</span>
@@ -802,11 +814,11 @@ export default function MatchDetailPage() {
                           </tr>
                         </thead>
                         <tbody>
-                          {inn.scorecard.bowlers.map((bowler, bwIdx) => {
+                          {(inn.scorecard?.bowlers || []).map((bowler, bwIdx) => {
                             const economy = bowler.overs > 0 ? (bowler.runs / bowler.overs).toFixed(2) : '0.00';
                             return (
                               <tr key={bwIdx} className="border-b border-white/5 hover:bg-white/5 transition">
-                                <td className="py-3 px-2 font-bold text-white font-sans uppercase">{formatPlayerName(bowler.player.name)}</td>
+                                <td className="py-3 px-2 font-bold text-white font-sans uppercase">{formatPlayerName(bowler.player?.name || 'Bowler')}</td>
                                 <td className="py-3 px-2 text-center">{bowler.overs}</td>
                                 <td className="py-3 px-2 text-center">{bowler.maidens}</td>
                                 <td className="py-3 px-2 text-center">{bowler.runs}</td>

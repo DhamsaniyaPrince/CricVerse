@@ -241,8 +241,8 @@ export default function AdminScoringPage() {
         setPlayingXI_B(teamBPlayerIds.slice(0, 11));
       }
       
-      setTeamAId(selectedMatch.teamA._id);
-      setTeamBId(selectedMatch.teamB._id);
+      if (selectedMatch.teamA) setTeamAId(selectedMatch.teamA._id);
+      if (selectedMatch.teamB) setTeamBId(selectedMatch.teamB._id);
       
       if (selectedMatch.playerOfMatch) {
         const pomVal = selectedMatch.playerOfMatch;
@@ -454,10 +454,10 @@ export default function AdminScoringPage() {
     
     if (isSecondInnings) {
       const firstInnings = selectedMatch.innings[0];
-      const battingId = firstInnings.bowlingTeam._id || firstInnings.bowlingTeam;
-      const bowlingId = firstInnings.battingTeam._id || firstInnings.battingTeam;
-      const battingName = selectedMatch.teamA._id === battingId.toString() ? selectedMatch.teamA.name : selectedMatch.teamB.name;
-      const bowlingName = selectedMatch.teamA._id === bowlingId.toString() ? selectedMatch.teamA.name : selectedMatch.teamB.name;
+      const battingId = firstInnings?.bowlingTeam?._id || firstInnings?.bowlingTeam || '';
+      const bowlingId = firstInnings?.battingTeam?._id || firstInnings?.battingTeam || '';
+      const battingName = selectedMatch.teamA?._id === battingId.toString() ? (selectedMatch.teamA?.name || 'Team A') : (selectedMatch.teamB?.name || 'Team B');
+      const bowlingName = selectedMatch.teamA?._id === bowlingId.toString() ? (selectedMatch.teamA?.name || 'Team A') : (selectedMatch.teamB?.name || 'Team B');
       return {
         battingTeamId: battingId.toString(),
         bowlingTeamId: bowlingId.toString(),
@@ -466,22 +466,22 @@ export default function AdminScoringPage() {
       };
     }
 
-    const isTossWinnerTeamA = tossWinnerId === selectedMatch.teamA._id;
+    const isTossWinnerTeamA = tossWinnerId === selectedMatch.teamA?._id;
     const isBattingSelected = tossDecision === 'Batting';
 
     if ((isTossWinnerTeamA && isBattingSelected) || (!isTossWinnerTeamA && !isBattingSelected)) {
       return {
-        battingTeamId: selectedMatch.teamA._id,
-        bowlingTeamId: selectedMatch.teamB._id,
-        battingTeamName: selectedMatch.teamA.name,
-        bowlingTeamName: selectedMatch.teamB.name
+        battingTeamId: selectedMatch.teamA?._id || '',
+        bowlingTeamId: selectedMatch.teamB?._id || '',
+        battingTeamName: selectedMatch.teamA?.name || 'Team A',
+        bowlingTeamName: selectedMatch.teamB?.name || 'Team B'
       };
     } else {
       return {
-        battingTeamId: selectedMatch.teamB._id,
-        bowlingTeamId: selectedMatch.teamA._id,
-        battingTeamName: selectedMatch.teamB.name,
-        bowlingTeamName: selectedMatch.teamA.name
+        battingTeamId: selectedMatch.teamB?._id || '',
+        bowlingTeamId: selectedMatch.teamA?._id || '',
+        battingTeamName: selectedMatch.teamB?.name || 'Team B',
+        bowlingTeamName: selectedMatch.teamA?.name || 'Team A'
       };
     }
   };
@@ -1367,13 +1367,14 @@ export default function AdminScoringPage() {
                       {/* Team A Roster */}
                       <div className="glass-card p-5 border-[#66fcf1]/10 bg-[#0b0c10]/20 space-y-4">
                         <div className="flex justify-between items-center border-b border-white/5 pb-2">
-                          <span className="font-extrabold text-white text-sm uppercase">{selectedMatch.teamA.name}</span>
+                          <span className="font-extrabold text-white text-sm uppercase">{selectedMatch.teamA?.name || 'Team A'}</span>
                           <span className={`text-xs font-mono font-bold ${playingXI_A.length === 11 ? 'text-[#66fcf1]' : 'text-yellow-500'}`}>
                             {playingXI_A.length} / 11 Chosen
                           </span>
                         </div>
                         <div className="space-y-2 max-h-72 overflow-y-auto pr-2">
                           {(selectedMatch.teamA?.players || []).map((p: any) => {
+                            if (!p) return null;
                             const isSelected = playingXI_A.includes(p._id);
                             return (
                               <label key={p._id} className="flex items-center space-x-3 p-2.5 rounded-lg bg-[#0b0c10]/40 border border-white/5 cursor-pointer hover:border-[#66fcf1]/25 transition">
@@ -1384,8 +1385,8 @@ export default function AdminScoringPage() {
                                   className="w-4 h-4 text-[#66fcf1] border-gray-300 rounded focus:ring-[#66fcf1] bg-[#0b0c10]"
                                 />
                                 <div className="flex-1">
-                                  <span className="text-sm font-semibold text-white block leading-tight">{p.name}</span>
-                                  <span className="text-[10px] text-gray-500 uppercase leading-none">{p.role}</span>
+                                  <span className="text-sm font-semibold text-white block leading-tight">{p.name || 'Player'}</span>
+                                  <span className="text-[10px] text-gray-500 uppercase leading-none">{p.role || 'All-rounder'}</span>
                                 </div>
                               </label>
                             );
@@ -1399,13 +1400,14 @@ export default function AdminScoringPage() {
                       {/* Team B Roster */}
                       <div className="glass-card p-5 border-[#66fcf1]/10 bg-[#0b0c10]/20 space-y-4">
                         <div className="flex justify-between items-center border-b border-white/5 pb-2">
-                          <span className="font-extrabold text-white text-sm uppercase">{selectedMatch.teamB.name}</span>
+                          <span className="font-extrabold text-white text-sm uppercase">{selectedMatch.teamB?.name || 'Team B'}</span>
                           <span className={`text-xs font-mono font-bold ${playingXI_B.length === 11 ? 'text-[#66fcf1]' : 'text-yellow-500'}`}>
                             {playingXI_B.length} / 11 Chosen
                           </span>
                         </div>
                         <div className="space-y-2 max-h-72 overflow-y-auto pr-2">
                           {(selectedMatch.teamB?.players || []).map((p: any) => {
+                            if (!p) return null;
                             const isSelected = playingXI_B.includes(p._id);
                             return (
                               <label key={p._id} className="flex items-center space-x-3 p-2.5 rounded-lg bg-[#0b0c10]/40 border border-white/5 cursor-pointer hover:border-[#66fcf1]/25 transition">
@@ -1416,8 +1418,8 @@ export default function AdminScoringPage() {
                                   className="w-4 h-4 text-[#66fcf1] border-gray-300 rounded focus:ring-[#66fcf1] bg-[#0b0c10]"
                                 />
                                 <div className="flex-1">
-                                  <span className="text-sm font-semibold text-white block leading-tight">{p.name}</span>
-                                  <span className="text-[10px] text-gray-500 uppercase leading-none">{p.role}</span>
+                                  <span className="text-sm font-semibold text-white block leading-tight">{p.name || 'Player'}</span>
+                                  <span className="text-[10px] text-gray-500 uppercase leading-none">{p.role || 'All-rounder'}</span>
                                 </div>
                               </label>
                             );
@@ -1465,30 +1467,30 @@ export default function AdminScoringPage() {
 
                     <div className="space-y-6 max-w-md mx-auto">
                       {/* Toss Winner */}
-                      <div className="space-y-2">
+                       <div className="space-y-2">
                         <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Toss Winner</label>
                         <div className="grid grid-cols-2 gap-4">
                           <button
                             type="button"
-                            onClick={() => setTossWinnerId(selectedMatch.teamA._id)}
+                            onClick={() => selectedMatch.teamA?._id && setTossWinnerId(selectedMatch.teamA._id)}
                             className={`py-3 rounded-xl border text-xs font-bold uppercase transition ${
-                              tossWinnerId === selectedMatch.teamA._id
+                              tossWinnerId === selectedMatch.teamA?._id
                                 ? 'bg-[#66fcf1]/10 border-[#66fcf1] text-[#66fcf1]'
                                 : 'bg-transparent border-white/10 text-gray-400 hover:border-white/20'
                             }`}
                           >
-                            {selectedMatch.teamA.name}
+                            {selectedMatch.teamA?.name || 'Team A'}
                           </button>
                           <button
                             type="button"
-                            onClick={() => setTossWinnerId(selectedMatch.teamB._id)}
+                            onClick={() => selectedMatch.teamB?._id && setTossWinnerId(selectedMatch.teamB._id)}
                             className={`py-3 rounded-xl border text-xs font-bold uppercase transition ${
-                              tossWinnerId === selectedMatch.teamB._id
+                              tossWinnerId === selectedMatch.teamB?._id
                                 ? 'bg-[#66fcf1]/10 border-[#66fcf1] text-[#66fcf1]'
                                 : 'bg-transparent border-white/10 text-gray-400 hover:border-white/20'
                             }`}
                           >
-                            {selectedMatch.teamB.name}
+                            {selectedMatch.teamB?.name || 'Team B'}
                           </button>
                         </div>
                       </div>
@@ -1719,7 +1721,7 @@ export default function AdminScoringPage() {
 
                             <span className="text-gray-500 uppercase font-bold">Toss Winner:</span>
                             <span className="text-white font-bold uppercase">
-                              {tossWinnerId === selectedMatch.teamA._id ? selectedMatch.teamA.name : selectedMatch.teamB.name}
+                              {tossWinnerId === selectedMatch.teamA?._id ? (selectedMatch.teamA?.name || 'Team A') : (selectedMatch.teamB?.name || 'Team B')}
                             </span>
 
                             <span className="text-gray-500 uppercase font-bold">Toss Decision:</span>
@@ -1789,7 +1791,7 @@ export default function AdminScoringPage() {
                           </div>
                           <h2 className="text-xl font-bold text-white uppercase tracking-wider">{selectedMatch.title}</h2>
                           <div className="flex items-center space-x-2 text-xs text-gray-500 font-bold uppercase">
-                            <span>Batting: {isTeamABatting ? selectedMatch.teamA.name : selectedMatch.teamB.name}</span>
+                            <span>Batting: {isTeamABatting ? (selectedMatch.teamA?.name || 'Team A') : (selectedMatch.teamB?.name || 'Team B')}</span>
                             <span>|</span>
                             <span>CRR: {((isTeamABatting ? selectedMatch.score.teamA.runs : selectedMatch.score.teamB.runs) / Math.max(0.1, isTeamABatting ? selectedMatch.score.teamA.overs : selectedMatch.score.teamB.overs)).toFixed(2)}</span>
                           </div>
@@ -1884,8 +1886,8 @@ export default function AdminScoringPage() {
                                 selectedMatch.result.winner ? (
                                   `${
                                     typeof selectedMatch.result.winner === 'object'
-                                      ? selectedMatch.result.winner.name
-                                      : (selectedMatch.result.winner === selectedMatch.teamA._id ? selectedMatch.teamA.name : selectedMatch.teamB.name)
+                                      ? (selectedMatch.result.winner.name || 'Winner')
+                                      : (selectedMatch.result.winner === selectedMatch.teamA?._id ? (selectedMatch.teamA?.name || 'Team A') : (selectedMatch.teamB?.name || 'Team B'))
                                   } ${selectedMatch.result.margin ? (selectedMatch.result.margin.startsWith('won') ? selectedMatch.result.margin : 'won ' + selectedMatch.result.margin) : 'won'}`
                                 ) : (
                                   selectedMatch.result.margin || 'Match Tied'
@@ -1909,11 +1911,11 @@ export default function AdminScoringPage() {
                                 <span className="text-base font-black text-[#66fcf1] uppercase">
                                   {selectedMatch.playerOfMatch ? (
                                     typeof selectedMatch.playerOfMatch === 'object'
-                                      ? selectedMatch.playerOfMatch.name
+                                      ? (selectedMatch.playerOfMatch.name || 'Player')
                                       : (() => {
                                           const allP = [...(selectedMatch.playingXIA || []), ...(selectedMatch.playingXIB || [])];
                                           const matching = allP.find(p => p._id === selectedMatch.playerOfMatch);
-                                          return matching ? matching.name : 'Not Assigned';
+                                          return matching ? (matching.name || 'Player') : 'Not Assigned';
                                         })()
                                   ) : (
                                     'Not Assigned'
@@ -1931,14 +1933,14 @@ export default function AdminScoringPage() {
                                   className="flex-1 sm:flex-initial bg-[#0b0c10] border border-white/10 hover:border-[#66fcf1]/30 rounded-xl py-2 px-3 text-xs font-semibold text-white focus:outline-none cursor-pointer"
                                 >
                                   <option value="">-- Override POM --</option>
-                                  <optgroup label={selectedMatch.teamA.name}>
+                                  <optgroup label={selectedMatch.teamA?.name || 'Team A'}>
                                     {(selectedMatch.playingXIA || []).map((p: any) => (
-                                      <option key={p._id} value={p._id}>{p.name}</option>
+                                      <option key={p?._id} value={p?._id}>{p?.name || 'Player'}</option>
                                     ))}
                                   </optgroup>
-                                  <optgroup label={selectedMatch.teamB.name}>
+                                  <optgroup label={selectedMatch.teamB?.name || 'Team B'}>
                                     {(selectedMatch.playingXIB || []).map((p: any) => (
-                                      <option key={p._id} value={p._id}>{p.name}</option>
+                                      <option key={p?._id} value={p?._id}>{p?.name || 'Player'}</option>
                                     ))}
                                   </optgroup>
                                 </select>
@@ -1946,12 +1948,12 @@ export default function AdminScoringPage() {
                             </div>
                           </div>
 
-                          {/* Scorecard Summary Tabs */}
+                      {/* Scorecard Summary Tabs */}
                           <div className="space-y-4">
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/5 pb-2">
                               <h4 className="text-xs font-extrabold uppercase tracking-widest text-[#66fcf1]">Final Scorecard Summary</h4>
                               <div className="flex space-x-2">
-                                {selectedMatch.innings.map((inn, idx) => (
+                                {(selectedMatch.innings || []).map((inn, idx) => (
                                   <button
                                     key={idx}
                                     type="button"
@@ -1969,7 +1971,7 @@ export default function AdminScoringPage() {
                             </div>
 
                             {/* Render Active Innings Scorecard */}
-                            {selectedMatch.innings[activeScorecardTab] ? (() => {
+                            {selectedMatch.innings && selectedMatch.innings[activeScorecardTab] ? (() => {
                               const inn = selectedMatch.innings[activeScorecardTab];
                               return (
                                 <div className="space-y-6 font-mono text-xs">
@@ -1992,11 +1994,11 @@ export default function AdminScoringPage() {
                                           </tr>
                                         </thead>
                                         <tbody>
-                                          {inn.scorecard.batsmen.map((batsman, bIdx) => {
+                                          {(inn.scorecard?.batsmen || []).map((batsman, bIdx) => {
                                             const sr = batsman.balls > 0 ? ((batsman.runs / batsman.balls) * 100).toFixed(1) : '0.0';
                                             return (
                                               <tr key={bIdx} className="border-b border-white/5 hover:bg-white/5 transition">
-                                                <td className="py-2 px-1 font-bold text-white uppercase">{batsman.player?.name}</td>
+                                                <td className="py-2 px-1 font-bold text-white uppercase">{batsman.player?.name || 'Batsman'}</td>
                                                 <td className="py-2 px-1 text-gray-500 text-[10px] truncate max-w-[120px]">
                                                   {batsman.howOut === 'Not Out' ? (
                                                     <span className="text-[#66fcf1] font-semibold">not out</span>
@@ -2039,12 +2041,12 @@ export default function AdminScoringPage() {
                                           </tr>
                                         </thead>
                                         <tbody>
-                                          {inn.scorecard.bowlers.map((bowler, bowlerIdx) => {
+                                          {(inn.scorecard?.bowlers || []).map((bowler, bowlerIdx) => {
                                             const balls = getBallsBowled(bowler.overs);
                                             const econ = balls > 0 ? ((bowler.runs / balls) * 6).toFixed(2) : '0.00';
                                             return (
                                               <tr key={bowlerIdx} className="border-b border-white/5 hover:bg-white/5 transition">
-                                                <td className="py-2 px-1 font-bold text-white uppercase">{bowler.player?.name}</td>
+                                                <td className="py-2 px-1 font-bold text-white uppercase">{bowler.player?.name || 'Bowler'}</td>
                                                 <td className="py-2 px-1 text-center text-gray-300 font-bold">{bowler.overs}</td>
                                                 <td className="py-2 px-1 text-center text-gray-300">{bowler.maidens}</td>
                                                 <td className="py-2 px-1 text-center text-gray-300">{bowler.runs}</td>
@@ -2063,7 +2065,6 @@ export default function AdminScoringPage() {
                               <p className="text-gray-500 italic text-xs">No scorecard entries recorded.</p>
                             )}
                           </div>
-
                           {/* Navigation Button */}
                           <button
                             type="button"
@@ -2393,16 +2394,17 @@ export default function AdminScoringPage() {
                         <div className="grid grid-cols-2 gap-4 text-xs">
                           {/* Team A Playing XI list */}
                           <div className="space-y-1.5">
-                            <span className="font-extrabold text-white block uppercase border-b border-white/5 pb-1 mb-1 truncate">{selectedMatch.teamA.name}</span>
+                            <span className="font-extrabold text-white block uppercase border-b border-white/5 pb-1 mb-1 truncate">{selectedMatch.teamA?.name || 'Team A'}</span>
                             <div className="space-y-1 max-h-48 overflow-y-auto pr-1">
                               {(selectedMatch.playingXIA || []).map((player: any) => {
+                                if (!player) return null;
                                 const isStriker = selectedMatch.liveState?.striker?._id === player._id;
                                 const isNonStriker = selectedMatch.liveState?.nonStriker?._id === player._id;
                                 const isBowler = selectedMatch.liveState?.currentBowler?._id === player._id;
                                 return (
                                   <div key={player._id} className="flex justify-between items-center py-1">
                                     <span className={`truncate font-medium ${isStriker || isNonStriker ? 'text-[#66fcf1] font-bold' : 'text-gray-400'}`}>
-                                      {player.name}
+                                      {player.name || 'Player'}
                                     </span>
                                     {(isStriker || isNonStriker) && <span className="text-[9px] bg-[#66fcf1]/10 text-[#66fcf1] px-1.5 py-0.5 rounded font-bold">BAT</span>}
                                     {isBowler && <span className="text-[9px] bg-yellow-500/10 text-yellow-400 px-1.5 py-0.5 rounded font-bold">BOWL</span>}
@@ -2417,16 +2419,17 @@ export default function AdminScoringPage() {
 
                           {/* Team B Playing XI list */}
                           <div className="space-y-1.5">
-                            <span className="font-extrabold text-white block uppercase border-b border-white/5 pb-1 mb-1 truncate">{selectedMatch.teamB.name}</span>
+                            <span className="font-extrabold text-white block uppercase border-b border-white/5 pb-1 mb-1 truncate">{selectedMatch.teamB?.name || 'Team B'}</span>
                             <div className="space-y-1 max-h-48 overflow-y-auto pr-1">
                               {(selectedMatch.playingXIB || []).map((player: any) => {
+                                if (!player) return null;
                                 const isStriker = selectedMatch.liveState?.striker?._id === player._id;
                                 const isNonStriker = selectedMatch.liveState?.nonStriker?._id === player._id;
                                 const isBowler = selectedMatch.liveState?.currentBowler?._id === player._id;
                                 return (
                                   <div key={player._id} className="flex justify-between items-center py-1">
                                     <span className={`truncate font-medium ${isStriker || isNonStriker ? 'text-[#66fcf1] font-bold' : 'text-gray-400'}`}>
-                                      {player.name}
+                                      {player.name || 'Player'}
                                     </span>
                                     {(isStriker || isNonStriker) && <span className="text-[9px] bg-[#66fcf1]/10 text-[#66fcf1] px-1.5 py-0.5 rounded font-bold">BAT</span>}
                                     {isBowler && <span className="text-[9px] bg-yellow-500/10 text-yellow-400 px-1.5 py-0.5 rounded font-bold">BOWL</span>}

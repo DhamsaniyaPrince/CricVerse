@@ -510,21 +510,21 @@ export default function TournamentDetailPage() {
                 exit={{ opacity: 0, y: -10 }}
                 className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
               >
-                {tournament.teams?.filter(t => t !== null).map((team) => (
+                {(tournament.teams || []).filter(t => t !== null && t !== undefined).map((team) => (
                   <div
-                    key={team._id}
-                    onClick={() => router.push(`/teams/${team._id}`)}
+                    key={team?._id}
+                    onClick={() => team?._id && router.push(`/teams/${team._id}`)}
                     className="glass-card p-6 border-white/5 hover:border-[#66fcf1]/30 hover:bg-[#1f2833]/10 cursor-pointer transition duration-300 flex items-center space-x-4"
                   >
                     <div className="w-12 h-12 rounded-2xl bg-[#1f2833] flex items-center justify-center font-bold text-white text-xl overflow-hidden border border-white/5">
-                      {team.logo ? (
-                        <img src={team.logo} alt={team.name} className="w-full h-full object-cover" />
+                      {team?.logo ? (
+                        <img src={team.logo} alt={team.name || 'Team'} className="w-full h-full object-cover" />
                       ) : (
-                        team.name?.charAt(0).toUpperCase() || 'T'
+                        team?.name?.charAt(0).toUpperCase() || 'T'
                       )}
                     </div>
                     <div>
-                      <h3 className="font-extrabold text-white text-base tracking-wide uppercase">{team.name}</h3>
+                      <h3 className="font-extrabold text-white text-base tracking-wide uppercase">{team?.name || 'Deleted Team'}</h3>
                       <span className="text-[10px] text-gray-500 uppercase tracking-widest block mt-0.5">Click for Squad Roster</span>
                     </div>
                   </div>
@@ -576,7 +576,7 @@ export default function TournamentDetailPage() {
                               <span className="w-5 h-5 rounded bg-gray-800 text-xs flex items-center justify-center font-bold text-gray-400">
                                 {idx + 1}
                               </span>
-                              <span>{row.team.name}</span>
+                              <span>{row.team?.name || 'Unknown Team'}</span>
                             </td>
                             <td className="py-3.5 px-3 font-mono text-center">{row.played}</td>
                             <td className="py-3.5 px-3 font-mono text-center text-emerald-400">{row.won}</td>
@@ -771,18 +771,18 @@ export default function TournamentDetailPage() {
                   </div>
 
                   <div className="space-y-4">
-                    {leaderboard.batsmen.map((player, i) => (
+                    {(leaderboard.batsmen || []).map((player, i) => (
                       <div key={i} className="flex items-center justify-between border-b border-white/5 pb-3 text-sm">
                         <div className="flex items-center space-x-3">
                           <span className="font-mono font-bold text-gray-500">{i + 1}</span>
-                          <span className="font-bold text-white">{player.name}</span>
+                          <span className="font-bold text-white">{player?.name || 'Unknown Player'}</span>
                         </div>
                         <span className="font-mono text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded text-xs">
-                          {player.runs} Runs
+                          {player?.runs || 0} Runs
                         </span>
                       </div>
                     ))}
-                    {leaderboard.batsmen.length === 0 && (
+                    {(!leaderboard.batsmen || leaderboard.batsmen.length === 0) && (
                       <p className="text-gray-500 text-xs italic">No statistics recorded yet</p>
                     )}
                   </div>
@@ -796,18 +796,18 @@ export default function TournamentDetailPage() {
                   </div>
 
                   <div className="space-y-4">
-                    {leaderboard.bowlers.map((player, i) => (
+                    {(leaderboard.bowlers || []).map((player, i) => (
                       <div key={i} className="flex items-center justify-between border-b border-white/5 pb-3 text-sm">
                         <div className="flex items-center space-x-3">
                           <span className="font-mono font-bold text-gray-500">{i + 1}</span>
-                          <span className="font-bold text-white">{player.name}</span>
+                          <span className="font-bold text-white">{player?.name || 'Unknown Player'}</span>
                         </div>
                         <span className="font-mono text-pink-400 font-bold bg-pink-500/10 px-2 py-0.5 rounded text-xs">
-                          {player.wickets} Wkts
+                          {player?.wickets || 0} Wkts
                         </span>
                       </div>
                     ))}
-                    {leaderboard.bowlers.length === 0 && (
+                    {(!leaderboard.bowlers || leaderboard.bowlers.length === 0) && (
                       <p className="text-gray-500 text-xs italic">No statistics recorded yet</p>
                     )}
                   </div>
@@ -834,11 +834,11 @@ export default function TournamentDetailPage() {
                       <div key={reg._id} className="p-4 rounded-xl border border-white/5 bg-[#0b0c10]/40 flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div className="flex items-center space-x-4">
                           <div className="w-10 h-10 bg-gray-900 border border-white/5 rounded-xl flex items-center justify-center font-bold text-white">
-                            {reg.team.logo ? <img src={reg.team.logo} alt={reg.team.name} className="w-full h-full object-cover" /> : reg.team.name.charAt(0).toUpperCase()}
+                            {reg.team?.logo ? <img src={reg.team.logo} alt={reg.team?.name || 'Team'} className="w-full h-full object-cover" /> : (reg.team?.name || 'T').charAt(0).toUpperCase()}
                           </div>
                           <div>
-                            <span className="font-bold text-white block uppercase text-sm">{reg.team.name}</span>
-                            <span className="text-[10px] text-gray-500 block">Submitted by captain: {reg.captain?.username}</span>
+                            <span className="font-bold text-white block uppercase text-sm">{reg.team?.name || 'Deleted Team'}</span>
+                            <span className="text-[10px] text-gray-500 block">Submitted by captain: {reg.captain?.username || 'Unknown'}</span>
                           </div>
                         </div>
 

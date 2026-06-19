@@ -599,11 +599,11 @@ export default function DashboardPage() {
 
     ctx.fillStyle = '#ffffff';
     ctx.font = 'bold 32px Helvetica';
-    ctx.fillText(player.name.toUpperCase(), 40, 100);
+    ctx.fillText((player.name || 'Player').toUpperCase(), 40, 100);
 
     ctx.fillStyle = 'rgba(255,255,255,0.6)';
     ctx.font = '14px Helvetica';
-    ctx.fillText(`${player.role.toUpperCase()} | ${player.currentTeam?.name || 'FREE AGENT'}`, 40, 125);
+    ctx.fillText(`${(player.role || 'Player').toUpperCase()} | ${player.currentTeam?.name || 'FREE AGENT'}`, 40, 125);
 
     ctx.strokeStyle = 'rgba(102, 252, 241, 0.2)';
     ctx.beginPath();
@@ -628,14 +628,14 @@ export default function DashboardPage() {
     drawCardStat(40, 260, 'Bat Avg', String(player.stats?.batting?.average || '0.0'));
     drawCardStat(160, 260, 'Wkts Best', player.stats?.bowling?.bestBowling || '0/0');
     drawCardStat(280, 260, 'MVPs Won', String(player.mvpAwards || 0));
-    drawCardStat(400, 260, 'Style', player.battingStyle.split('-')[0] + ' Bat');
+    drawCardStat(400, 260, 'Style', (player.battingStyle || 'Right-hand').split('-')[0] + ' Bat');
 
     ctx.fillStyle = 'rgba(255,255,255,0.2)';
     ctx.font = '9px Helvetica';
     ctx.fillText('POWERED BY CRICVERSE DIGITAL ENGINE', 40, 360);
 
     const link = document.createElement('a');
-    link.download = `cricverse_player_${player.name.replace(/\s+/g, '_')}.png`;
+    link.download = `cricverse_player_${(player.name || 'Player').replace(/\s+/g, '_')}.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
     completeChallenge('card_download', 100);
@@ -643,7 +643,7 @@ export default function DashboardPage() {
 
   const siteUrl = getSiteUrl();
   const shareUrl = player ? `${siteUrl}/players/${player._id}` : '';
-  const shareText = player ? `🏆 Check out my player stats and awards for ${player.name} on CricVerse! Total Runs: ${player.stats?.batting?.runs || 0} | Wickets: ${player.stats?.bowling?.wickets || 0} | MVPs: ${player.mvpAwards || 0}.` : '';
+  const shareText = player ? `🏆 Check out my player stats and awards for ${player.name || 'Player'} on CricVerse! Total Runs: ${player.stats?.batting?.runs || 0} | Wickets: ${player.stats?.bowling?.wickets || 0} | MVPs: ${player.mvpAwards || 0}.` : '';
 
   const recentHistoryData = player && player.matchHistory && player.matchHistory.length > 0
     ? [...player.matchHistory].reverse().map((m, idx) => ({
@@ -708,10 +708,10 @@ export default function DashboardPage() {
                   <div className="flex justify-between items-start z-10">
                     <div className="flex items-center space-x-4">
                       <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-[#1f2833]/40 border-2 border-[#66fcf1]/45 flex items-center justify-center overflow-hidden shadow-[0_0_15px_rgba(102,252,241,0.25)] relative group">
-                        {player.avatar || editForm.avatar ? (
-                          <img src={editForm.avatar || player.avatar} alt={player.name} className="w-full h-full object-cover" />
+                        {player?.avatar || editForm.avatar ? (
+                          <img src={editForm.avatar || player?.avatar} alt={player?.name || 'Player'} className="w-full h-full object-cover" />
                         ) : (
-                          player.name.charAt(0).toUpperCase()
+                          (player?.name || 'P').charAt(0).toUpperCase()
                         )}
                         {isEditing && (
                           <button
@@ -723,8 +723,8 @@ export default function DashboardPage() {
                         )}
                       </div>
                       <div>
-                        <h1 className="text-xl md:text-3xl font-black text-white uppercase tracking-wider">{player.name}</h1>
-                        <p className="text-xs font-digital text-gray-500 uppercase tracking-widest mt-0.5">@{player.username || user?.username} | {player.role}</p>
+                        <h1 className="text-xl md:text-3xl font-black text-white uppercase tracking-wider">{player?.name || 'Player'}</h1>
+                        <p className="text-xs font-digital text-gray-500 uppercase tracking-widest mt-0.5">@{player?.username || user?.username || 'user'} | {player?.role || 'Player'}</p>
                         <div className="flex space-x-2 mt-2">
                           <span className="bg-[#66fcf1]/10 border border-[#66fcf1]/25 text-[#66fcf1] text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
                             Team: {player.currentTeam?.name || 'FREE AGENT'}
@@ -1064,9 +1064,9 @@ export default function DashboardPage() {
                                   {/* Team A */}
                                   <div className="flex items-center space-x-2.5">
                                     <div className="w-8 h-8 rounded bg-gray-800 flex items-center justify-center font-bold text-white text-xs">
-                                      {m.teamA.logo ? <img src={m.teamA.logo} alt={m.teamA.name} className="w-full h-full object-cover" /> : m.teamA.name.charAt(0)}
+                                      {m.teamA?.logo ? <img src={m.teamA.logo} alt={m.teamA?.name || 'Team'} className="w-full h-full object-cover" /> : (m.teamA?.name || 'T').charAt(0)}
                                     </div>
-                                    <span className="text-sm font-black text-white">{m.teamA.name}</span>
+                                    <span className="text-sm font-black text-white">{m.teamA?.name || 'Deleted Team'}</span>
                                   </div>
 
                                   {/* Scores comparison */}
@@ -1082,9 +1082,9 @@ export default function DashboardPage() {
                                   {/* Team B */}
                                   <div className="flex items-center space-x-2.5">
                                     <div className="w-8 h-8 rounded bg-gray-800 flex items-center justify-center font-bold text-white text-xs">
-                                      {m.teamB.logo ? <img src={m.teamB.logo} alt={m.teamB.name} className="w-full h-full object-cover" /> : m.teamB.name.charAt(0)}
+                                      {m.teamB?.logo ? <img src={m.teamB.logo} alt={m.teamB?.name || 'Team'} className="w-full h-full object-cover" /> : (m.teamB?.name || 'T').charAt(0)}
                                     </div>
-                                    <span className="text-sm font-black text-white">{m.teamB.name}</span>
+                                    <span className="text-sm font-black text-white">{m.teamB?.name || 'Deleted Team'}</span>
                                   </div>
 
                                   {/* Scores comparison */}
@@ -1145,8 +1145,8 @@ export default function DashboardPage() {
                                       <XAxis dataKey="over" stroke="rgba(255,255,255,0.3)" style={{ fontSize: '9px' }} />
                                       <YAxis stroke="rgba(255,255,255,0.3)" style={{ fontSize: '9px' }} />
                                       <Tooltip contentStyle={{ backgroundColor: '#0b0c10', border: '1px solid rgba(102,252,241,0.2)' }} />
-                                      <Line type="monotone" dataKey={selectedMatch.teamA.name} stroke="#66fcf1" strokeWidth={2.5} dot={false} />
-                                      <Line type="monotone" dataKey={selectedMatch.teamB.name} stroke="#ff007f" strokeWidth={2.5} dot={false} />
+                                      <Line type="monotone" dataKey={selectedMatch?.teamA?.name || 'Team A'} stroke="#66fcf1" strokeWidth={2.5} dot={false} />
+                                      <Line type="monotone" dataKey={selectedMatch?.teamB?.name || 'Team B'} stroke="#ff007f" strokeWidth={2.5} dot={false} />
                                     </LineChart>
                                   </ResponsiveContainer>
                                 </div>
@@ -1390,7 +1390,7 @@ export default function DashboardPage() {
                           ) : (
                             upcomingMatchesList.map(m => {
                               const alreadyVoted = !!predictVotes[m._id];
-                              const voteA = alreadyVoted ? (predictVotes[m._id] === m.teamA.name ? 68 : 32) : 50;
+                              const voteA = alreadyVoted ? (predictVotes[m._id] === m.teamA?.name ? 68 : 32) : 50;
                               const voteB = 100 - voteA;
 
                               return (
@@ -1403,27 +1403,27 @@ export default function DashboardPage() {
                                   
                                   <div className="flex justify-around items-center gap-4">
                                     <button
-                                      onClick={() => handlePredictVote(m._id, m.teamA.name)}
+                                      onClick={() => m.teamA?.name && handlePredictVote(m._id, m.teamA.name)}
                                       disabled={alreadyVoted}
                                       className={`flex-1 py-3 text-center rounded-xl font-digital font-bold text-xs uppercase border transition duration-200 ${
-                                        predictVotes[m._id] === m.teamA.name 
+                                        predictVotes[m._id] === m.teamA?.name 
                                           ? 'bg-[#66fcf1]/20 border-[#66fcf1] text-[#66fcf1]' 
                                           : 'bg-slate-900 border-white/5 text-white hover:border-white/20'
                                       }`}
                                     >
-                                      {m.teamA.name} {alreadyVoted && `(${voteA}%)`}
+                                      {m.teamA?.name || 'Team A'} {alreadyVoted && `(${voteA}%)`}
                                     </button>
                                     <span className="text-[10px] font-digital text-gray-600 font-black">VS</span>
                                     <button
-                                      onClick={() => handlePredictVote(m._id, m.teamB.name)}
+                                      onClick={() => m.teamB?.name && handlePredictVote(m._id, m.teamB.name)}
                                       disabled={alreadyVoted}
                                       className={`flex-1 py-3 text-center rounded-xl font-digital font-bold text-xs uppercase border transition duration-200 ${
-                                        predictVotes[m._id] === m.teamB.name 
+                                        predictVotes[m._id] === m.teamB?.name 
                                           ? 'bg-[#ff007f]/20 border-[#ff007f] text-[#ff007f]' 
                                           : 'bg-slate-900 border-white/5 text-white hover:border-white/20'
                                       }`}
                                     >
-                                      {m.teamB.name} {alreadyVoted && `(${voteB}%)`}
+                                      {m.teamB?.name || 'Team B'} {alreadyVoted && `(${voteB}%)`}
                                     </button>
                                   </div>
                                 </div>

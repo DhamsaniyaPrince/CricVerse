@@ -209,12 +209,12 @@ export default function HomePage() {
                         {/* Team A Info */}
                         <div className="flex items-center justify-between">
                           <span className="font-bold text-white text-base md:text-lg tracking-wide">
-                            {match.teamA.name}
+                            {match.teamA?.name || 'Deleted Team'}
                           </span>
                           <span className="font-mono text-white font-bold text-base">
-                            {match.score.teamA.runs}/{match.score.teamA.wickets}
+                            {match.score?.teamA?.runs || 0}/{match.score?.teamA?.wickets || 0}
                             <span className="text-xs text-gray-500 font-medium pl-1.5">
-                              ({match.score.teamA.overs} ov)
+                              ({match.score?.teamA?.overs || 0} ov)
                             </span>
                           </span>
                         </div>
@@ -222,12 +222,12 @@ export default function HomePage() {
                         {/* Team B Info */}
                         <div className="flex items-center justify-between">
                           <span className="font-bold text-white text-base md:text-lg tracking-wide">
-                            {match.teamB.name}
+                            {match.teamB?.name || 'Deleted Team'}
                           </span>
                           <span className="font-mono text-white font-bold text-base">
-                            {match.score.teamB.runs}/{match.score.teamB.wickets}
+                            {match.score?.teamB?.runs || 0}/{match.score?.teamB?.wickets || 0}
                             <span className="text-xs text-gray-500 font-medium pl-1.5">
-                              ({match.score.teamB.overs} ov)
+                              ({match.score?.teamB?.overs || 0} ov)
                             </span>
                           </span>
                         </div>
@@ -237,7 +237,7 @@ export default function HomePage() {
                       <div className="border-t border-[#66fcf1]/5 pt-4 mt-4 flex items-center justify-between">
                         <span className="text-xs text-[#66fcf1] font-semibold">
                           {isCompleted && match.result?.winner
-                            ? `${match.result.winner.name} ${match.result.margin?.toLowerCase().startsWith('won') ? match.result.margin : 'won ' + match.result.margin}`
+                            ? `${typeof match.result.winner === 'object' ? (match.result.winner?.name || 'Winner') : (match.result.winner === match.teamA?._id ? (match.teamA?.name || 'Team A') : (match.teamB?.name || 'Team B'))} ${match.result.margin?.toLowerCase().startsWith('won') ? match.result.margin : 'won ' + match.result.margin}`
                             : isLive
                             ? 'Match in progress...'
                             : 'Match Scheduled'}
@@ -305,13 +305,13 @@ export default function HomePage() {
                 </div>
                 <div className="space-y-4">
                   {topPerformers.map((player: any, idx: number) => (
-                    <div key={player._id || idx} className="flex items-center justify-between border-b border-[#66fcf1]/5 pb-3">
+                    <div key={player?._id || idx} className="flex items-center justify-between border-b border-[#66fcf1]/5 pb-3">
                       <div>
-                        <p className="font-bold text-white">{player.name}</p>
-                        <p className="text-[11px] text-gray-500 font-bold uppercase tracking-wider">{player.role || 'Player'}</p>
+                        <p className="font-bold text-white">{player?.name || 'Unknown Player'}</p>
+                        <p className="text-[11px] text-gray-500 font-bold uppercase tracking-wider">{player?.role || 'Player'}</p>
                       </div>
                       <span className="font-mono text-emerald-400 font-bold text-sm bg-emerald-500/10 px-2.5 py-1 rounded">
-                        {player.runs.toLocaleString()} runs
+                        {player?.runs?.toLocaleString() || 0} runs
                       </span>
                     </div>
                   ))}
